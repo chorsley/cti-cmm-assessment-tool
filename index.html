@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CTI-CMM Assessment Tool</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Chart.js for the dashboard -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Load CTI-CMM Data -->
     <script src="cti-cmm-data.js"></script>
-    <!-- Custom Styles -->
     <style>
         /* Custom scrollbar for aesthetics */
         ::-webkit-scrollbar {
@@ -72,7 +68,7 @@
             letter-spacing: 0.05em;
             font-size: 0.75rem; /* text-xs */
         }
-
+        
         .assessment-table .col-practice { width: 30%; }
         .assessment-table .col-score { width: 70px; }
         .assessment-table .col-max { width: 50px; }
@@ -90,7 +86,6 @@
 <body class="bg-slate-100 font-sans text-slate-900">
 
     <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar Navigation -->
         <nav class="w-64 bg-slate-800 text-slate-200 flex-shrink-0 overflow-y-auto">
             <div class="p-4">
                 <h1 class="text-xl font-bold text-white">CTI-CMM Tool</h1>
@@ -101,15 +96,12 @@
                 <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="dashboard">Dashboard</a></li>
                 <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="priorities">Priorities Sheet</a></li>
                 
-                <!-- Domains Section -->
                 <li class="pt-4">
                     <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Assessment Domains</h2>
                     <ul id="domain-nav" class="mt-1 space-y-1">
-                        <!-- Domain links will be injected here by JS -->
-                    </ul>
+                        </ul>
                 </li>
 
-                <!-- Data Management -->
                 <li class="pt-8">
                     <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Data</h2>
                     <div class="p-2">
@@ -124,13 +116,24 @@
             </ul>
         </nav>
 
-        <!-- Main Content Area -->
         <main id="main-content" class="flex-1 overflow-y-auto p-6 md:p-8">
             
-            <!-- Home Page -->
             <div id="page-home" class="page max-w-4xl mx-auto">
                 <div class="bg-white p-8 rounded-lg shadow-md">
                     <h2 class="text-3xl font-bold text-slate-800 mb-4">Cyber Threat Intelligence Capability Maturity Model (CTI-CMM)</h2>
+                    <p class="text-lg text-slate-600 mb-6">The Cyber Threat Intelligence Capability Maturity Model (CTI-CMM) is designed to help improve cyber threat intelligence teams support to cybersecurity and risk management functions, leading to improved security outomes. Its goal is to provide a roadmap on how intelligence programs can mature existing support and process constructs to ultimately strengthen the organization's operational resilience. The CTI-CMM is industry sector, organization type, and size agnostic and was inspired by the U.S. Department of Energy's C2M2 cybersecurity framework. </p>
+
+<p class="text-lg text-slate-600 mb-6">The CTI-CMM offers a stakeholder-first approach to CTI maturity. The CTI-CMM focuses on the implementation and management of CTI best practices associated with information technology (IT), operational technology (OT), and information assets and the environments in which they operate. The model can be used to:</p>
+ 
+<div class="text-lg text-slate-600 mb-6">
+    <ul class="list-disc pl-5 space-y-1">
+        <li>Enable organizations to effectively and consistently evaluate and benchmark cyber threat intelligence capabilities</li>
+        <li>Improve organizational reach and support to cybersecurity and risk management stakeholders</li>
+        <li>Establish a roadmap to grow CTI program capabilities and improve existing maturity</li>
+        <li>Prioritize investment and actions to improve cyber threat intelligence capabilities</li>
+        <li>Share knowledge and best practices on CTI program operations</li>
+    </ul>
+</div>
                     <p class="text-lg text-slate-600 mb-6">Welcome to the CTI-CMM Assessment Tool (BETA Version 1.2)</p>
 
                     <div class="prose max-w-none prose-slate">
@@ -177,12 +180,10 @@
                 </div>
             </div>
 
-            <!-- Dashboard Page -->
             <div id="page-dashboard" class="page">
                 <h2 class="text-3xl font-bold text-slate-800 mb-6">Assessment Dashboard</h2>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Charts -->
                     <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
                         <h3 class="text-xl font-semibold mb-4">Domain Maturity Overview</h3>
                         <div class="relative h-96 w-full">
@@ -198,7 +199,6 @@
                     </div>
                 </div>
 
-                <!-- Summary Table -->
                 <div class="mt-8 bg-white rounded-lg shadow-md overflow-hidden">
                     <h3 class="text-xl font-semibold p-6">Domain Subtotals</h3>
                     <div class="overflow-x-auto">
@@ -213,19 +213,16 @@
                                 </tr>
                             </thead>
                             <tbody id="dashboard-table-body" class="bg-white divide-y divide-slate-200">
-                                <!-- Table rows will be injected here by JS -->
-                            </tbody>
+                                </tbody>
                             <tfoot class="bg-slate-50">
                                 <tr id="dashboard-table-footer" class="font-bold">
-                                    <!-- Footer totals will be injected here by JS -->
-                                </tr>
+                                    </tr>
                             </tfoot>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Assessment Page (Template) -->
             <div id="page-assessment" class="page">
                 <div class="flex justify-between items-center mb-4">
                     <h2 id="assessment-title" class="text-3xl font-bold text-slate-800"></h2>
@@ -234,7 +231,6 @@
                         <button id="collapse-all" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md text-sm font-medium">Collapse All</button>
                     </div>
                 </div>
-                <!-- Domain-specific header info -->
                 <div class="bg-white p-4 rounded-lg shadow-md mb-6 flex justify-between items-center">
                     <div>
                         <span class="font-bold">Date Last Assessed:</span>
@@ -245,17 +241,13 @@
                         <input type="checkbox" id="assessment-relevant" class="ml-2 h-5 w-5 text-blue-600 rounded">
                     </div>
                     <div id="assessment-summary" class="text-right">
-                        <!-- Summary stats injected by JS -->
-                    </div>
+                        </div>
                 </div>
                 
-                <!-- Objectives will be injected here -->
                 <div id="assessment-objectives-container" class="space-y-6">
-                    <!-- JS will render objectives here -->
-                </div>
+                    </div>
             </div>
 
-            <!-- Priorities Page -->
             <div id="page-priorities" class="page">
                 <h2 class="text-3xl font-bold text-slate-800 mb-6">Priorities Planning Sheet</h2>
 
@@ -297,8 +289,7 @@
                                 </tr>
                             </thead>
                             <tbody id="priorities-table-body" class="bg-white divide-y divide-slate-200">
-                                <!-- Priority items will be injected here by JS -->
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                 </div>
@@ -307,28 +298,88 @@
         </main>
     </div>
 
-    <!-- JavaScript Application Logic -->
     <script>
         // --- DATA MODEL ---
         // All data is now loaded from cti-cmm-data.js
         // CMM_DATA.domains contains the domain list
-        // CMM_DATA.assessmentData contains the default structure
+        // CMM_DATA.objectives contains the objectives and practices
 
         // This object holds all the objectives and practices for each domain.
         // It's also the structure that will be saved to localStorage.
         let assessmentData = {};
 
-        // Helper to generate the default data structure
+        // Helper to patch domain names (from request 3)
+        // This patches the "name": "nan" bug from the source data
+        const DOMAIN_NAME_MAP = {
+            "ASSET": "Asset, Change, and Configuration Management",
+            "THREAT": "Threat and Vulnerability Management",
+            "RISK": "Risk Management",
+            "ACCESS": "Identity and Access Management",
+            "SITUATION": "Situational Awareness",
+            "RESPONSE": "Event and Incident Response, Continuity of Operations",
+            "THIRD-PARTIES": "Third-Party Risk Management",
+            "FRAUD": "Fraud and Abuse Management",
+            "WORKFORCE": "Workforce Management",
+            "ARCHITECTURE": "Cybersecurity Architecture",
+            "PROGRAM": "Cybersecurity Program Management"
+        };
+
+        // =================================================================
+        // === FIX_HERE: Corrected function to parse new CMM_DATA structure ===
+        // =================================================================
+        // This function builds the initial state from cti-cmm-data.js
         function getDefaultAssessmentData() {
-            // Create a deep copy of the default data from the included file
-            // This prevents modifications from affecting the original constant
+            const defaultData = {};
+            
+            // Use CMM_DATA.domains to iterate
+            CMM_DATA.domains.forEach(domain => {
+                const domainId = domain.id;
+                // Get the objectives for this domain (e.g., CMM_DATA.objectives['ASSET'])
+                const objectivesFromData = CMM_DATA.objectives[domainId];
+                
+                const newObjectivesArray = [];
+                if (objectivesFromData) {
+                    
+                    // CMM_DATA.objectives[domainId] is an *object* where keys are the
+                    // prefixed names (e.g., "1. IMPROVE...").
+                    // We need to get the keys and sort them to ensure "1." comes before "2."
+                    const objectiveKeys = Object.keys(objectivesFromData).sort();
+
+                    // Now loop through the *sorted keys*
+                    for (const objectiveKey of objectiveKeys) {
+                        // Get the actual objective data object
+                        // This is the object { id, name, practices } from the Python script
+                        const objectiveData = objectivesFromData[objectiveKey];
+                        
+                        // Add this object to our array
+                        newObjectivesArray.push({
+                            id: objectiveData.id,        // e.g., "ASSET-1"
+                            name: objectiveData.name,      // e.g., "IMPROVE ASSET VISIBILITY"
+                            // Deep copy practices array to avoid mutation of original data
+                            practices: JSON.parse(JSON.stringify(objectiveData.practices)) 
+                        });
+                    }
+                }
+
+                defaultData[domainId] = {
+                    date: '',
+                    relevant: true,
+                    objectives: newObjectivesArray // This is now a correctly structured array
+                };
+            });
+            
             try {
-                return JSON.parse(JSON.stringify(CMM_DATA.assessmentData));
+                // This function is now the source of truth
+                return defaultData;
             } catch (e) {
-                console.error("Failed to deep copy default data:", e);
+                console.error("Failed to build default data:", e);
                 return {}; // Return empty object as a fallback
             }
         }
+        // =================================================================
+        // === END OF FIX ===
+        // =================================================================
+
 
         // --- STATE MANAGEMENT ---
         const STORAGE_KEY = 'ctiCmmAssessmentData';
@@ -347,14 +398,14 @@
         function loadState() {
             try {
                 const savedData = localStorage.getItem(STORAGE_KEY);
+                const defaultData = getDefaultAssessmentData();
                 if (savedData) {
                     const parsedData = JSON.parse(savedData);
                     // Merge saved data with default structure to ensure new practices are added
-                    // This is a simple merge; a more robust merge would be needed if practice IDs changed
-                    assessmentData = deepMerge(getDefaultAssessmentData(), parsedData);
+                    assessmentData = deepMerge(defaultData, parsedData);
                     console.log('Assessment data loaded.');
                 } else {
-                    assessmentData = getDefaultAssessmentData();
+                    assessmentData = defaultData;
                     console.log('No saved data. Initializing default data.');
                 }
             } catch (error) {
@@ -369,7 +420,7 @@
             let output = Object.assign({}, target);
             if (isObject(target) && isObject(source)) {
                 Object.keys(source).forEach(key => {
-                    if (isObject(source[key])) {
+                    if (isObject(source[key]) && !Array.isArray(source[key])) { // Don't merge arrays, replace them
                         if (!(key in target))
                             Object.assign(output, { [key]: source[key] });
                         else
@@ -392,12 +443,8 @@
         // --- UTILITY FUNCTIONS ---
 
         function getPracticeById(practiceId) {
-            // const [domainId, objectiveIndex, practiceLetter] = practiceId.split('-');
-            
-            // This is a brittle way to find practices, based on the sample ID format.
-            // A better way would be to search, but this is faster.
-            // Let's search instead.
-            
+            // This function relies on the `assessmentData` structure created
+            // by the (now fixed) getDefaultAssessmentData()
             for (const domainKey in assessmentData) {
                 const domain = assessmentData[domainKey];
                 if (domain.objectives) {
@@ -423,6 +470,68 @@
             }
         }
         
+        // Helper function: Update status cell background
+        function updateStatusCell(cell, practice) {
+            const score = parseInt(practice.score, 10) || 0;
+            const targetScore = parseInt(practice.targetScore, 10) || 0;
+            const max = parseInt(practice.max, 10) || 0;
+            
+            let percent = 0;
+            // Use targetScore if available, otherwise use max
+            let target = targetScore > 0 ? targetScore : max;
+            
+            if (target > 0) {
+                percent = (score / target) * 100;
+            }
+            
+            // Ensure percent doesn't exceed 100
+            percent = Math.min(percent, 100);
+
+            // Set text
+            cell.textContent = getStatusFromScore(score);
+            
+            // Set style
+            // Use a subtle color. 
+            let bgColor = '#dbeafe'; // bg-blue-100
+            let isComplete = (targetScore > 0 && score >= targetScore) || (targetScore === 0 && score === max);
+            
+            if (isComplete) {
+                 bgColor = '#dcfce7'; // bg-green-100
+            }
+
+            // If score is 0, don't show any bar
+            if (score === 0) {
+                cell.style.background = 'transparent';
+            } else {
+                cell.style.background = `linear-gradient(to right, ${bgColor} ${percent}%, transparent ${percent}%)`;
+            }
+        }
+
+        // Helper function: Update objective subtotal
+        function updateObjectiveSubtotal(objective) {
+            // Find the subtotal element by its data attribute
+            // (objective.name is now the *clean* name, e.g. "IMPROVE ASSET VISIBILITY")
+            const subtotalEl = document.querySelector(`div[data-objective-id="${objective.name}"]`);
+            if (!subtotalEl) return;
+
+            let objTotalScore = 0;
+            let objTotalMax = 0;
+            
+            objective.practices.forEach(practice => {
+                objTotalScore += parseInt(practice.score, 10) || 0;
+                objTotalMax += parseInt(practice.max, 10) || 0;
+            });
+            
+            const objPercent = objTotalMax > 0 ? (objTotalScore / objTotalMax) * 100 : 0;
+            
+            subtotalEl.innerHTML = `
+                <span>Section Subtotal:</span>
+                <span>Score: ${objTotalScore}</span>
+                <span>Max: ${objTotalMax}</span>
+                <span>${objPercent.toFixed(1)}%</span>
+            `;
+        }
+
         function calculateDomainScores(domainId) {
             const domain = assessmentData[domainId];
             let totalScore = 0;
@@ -533,9 +642,11 @@
             tableBody.innerHTML = ''; // Clear old data
             
             domainScores.forEach(domain => {
+                // Use map for domain name (fixes "nan" bug)
+                const domainName = DOMAIN_NAME_MAP[domain.id] || domain.nickname;
                 const row = `
                     <tr class="hover:bg-slate-50">
-                        <td class="py-4 px-6 text-sm font-medium text-slate-900">${domain.name}</td>
+                        <td class="py-4 px-6 text-sm font-medium text-slate-900">${domainName}</td>
                         <td class="py-4 px-6 text-sm text-slate-500">${domain.totalScore}</td>
                         <td class="py-4 px-6 text-sm text-slate-500">${domain.totalMax}</td>
                         <td class="py-4 px-6 text-sm text-slate-500">
@@ -693,14 +804,16 @@
 
         function renderAssessmentPage(domainId) {
             const domain = CMM_DATA.domains.find(d => d.id === domainId);
+            // This is the data built by the *fixed* getDefaultAssessmentData
             const domainData = assessmentData[domainId];
             if (!domain || !domainData) {
                 console.error('Domain not found:', domainId);
                 return;
             }
 
-            // Set title
-            document.getElementById('assessment-title').textContent = domain.name;
+            // Set title (using the "nan" bug patch)
+            const domainName = DOMAIN_NAME_MAP[domain.id] || domain.nickname;
+            document.getElementById('assessment-title').textContent = domainName;
 
             // Set header fields
             document.getElementById('assessment-date').value = domainData.date;
@@ -719,7 +832,9 @@
             const impactOptions = [
                 { value: 1, text: "1-Low" }, { value: 2, text: "2-Med" }, { value: 3, text: "3-High" }
             ];
-
+            
+            // This loop will now correctly iterate over all objectives (1, 2, and 3)
+            // because `domainData.objectives` is now a correct array
             domainData.objectives.forEach((objective, objIndex) => {
                 // Create objective container (using details/summary for collapse)
                 const details = document.createElement('details');
@@ -728,8 +843,13 @@
                 
                 const summary = document.createElement('summary');
                 summary.className = "cursor-pointer bg-slate-100 p-4 font-semibold text-lg hover:bg-slate-200 flex justify-between";
-                summary.textContent = objective.name;
+                // objective.name is now the clean name, e.g., "IMPROVE ASSET VISIBILITY"
+                summary.textContent = objective.name; 
                 details.appendChild(summary);
+
+                // Calculate subtotals for objective
+                let objTotalScore = 0;
+                let objTotalMax = 0;
 
                 // Group practices by maturity
                 const practicesByMaturity = {
@@ -738,9 +858,24 @@
                     'CTI 3': []
                 };
                 
+                // This loop will work now because objective.practices is a valid array
                 objective.practices.forEach(practice => {
-                    if (practicesByMaturity.hasOwnProperty(practice.maturity)) {
-                        practicesByMaturity[practice.maturity].push(practice);
+                    // Add to subtotals
+                    objTotalScore += parseInt(practice.score, 10) || 0;
+                    objTotalMax += parseInt(practice.max, 10) || 0;
+                    
+                    // Group for rendering
+                    let maturityKey = practice.maturity.replace(/\s+/g, ' ').toUpperCase(); // Normalize key
+                    if (maturityKey.startsWith('CTI1')) maturityKey = 'CTI 1';
+                    if (maturityKey.startsWith('CTI2')) maturityKey = 'CTI 2';
+                    if (maturityKey.startsWith('CTI3')) maturityKey = 'CTI 3';
+                    
+                    if (practicesByMaturity.hasOwnProperty(maturityKey)) {
+                        practicesByMaturity[maturityKey].push(practice);
+                    } else {
+                        // Fallback for unexpected maturity values
+                        if (!practicesByMaturity['Other']) practicesByMaturity['Other'] = [];
+                        practicesByMaturity['Other'].push(practice);
                     }
                 });
 
@@ -749,9 +884,9 @@
                 maturityGroupsContainer.className = "p-4 space-y-4";
 
                 // Loop over CTI 1, CTI 2, CTI 3 and render tables
-                for (const maturityLevel of ['CTI 1', 'CTI 2', 'CTI 3']) {
+                for (const maturityLevel of ['CTI 1', 'CTI 2', 'CTI 3', 'Other']) {
                     const practices = practicesByMaturity[maturityLevel];
-                    if (practices.length === 0) continue; // Don't render if no practices for this level
+                    if (!practices || practices.length === 0) continue; // Don't render if no practices
                     
                     // Create group header (e.g., "CTI 1 - Foundational")
                     const groupHeader = document.createElement('h4');
@@ -759,6 +894,7 @@
                     let maturityName = "Foundational";
                     if (maturityLevel === 'CTI 2') maturityName = "Intermediate";
                     if (maturityLevel === 'CTI 3') maturityName = "Advanced";
+                    if (maturityLevel === 'Other') maturityName = "Uncategorized";
                     groupHeader.textContent = `${maturityLevel} - ${maturityName}`;
                     maturityGroupsContainer.appendChild(groupHeader);
                     
@@ -812,8 +948,8 @@
                         // Status
                         const cellStatus = document.createElement('td');
                         cellStatus.className = "font-medium";
-                        cellStatus.textContent = getStatusFromScore(practice.score);
                         cellStatus.dataset.statusId = practice.id;
+                        updateStatusCell(cellStatus, practice); // Use helper
                         row.appendChild(cellStatus);
                         
                         // Evidence
@@ -860,6 +996,21 @@
                 }
 
                 details.appendChild(maturityGroupsContainer);
+
+                // Add the subtotal element
+                const objPercent = objTotalMax > 0 ? (objTotalScore / objTotalMax) * 100 : 0;
+                const subtotalEl = document.createElement('div');
+                subtotalEl.className = "bg-slate-50 p-4 font-bold text-sm flex justify-end space-x-6 border-t border-slate-200";
+                // Add data-attribute to find this element later
+                subtotalEl.dataset.objectiveId = objective.name;
+                subtotalEl.innerHTML = `
+                    <span>Section Subtotal:</span>
+                    <span>Score: ${objTotalScore}</span>
+                    <span>Max: ${objTotalMax}</span>
+                    <span>${objPercent.toFixed(1)}%</span>
+                `;
+                details.appendChild(subtotalEl); // Add it to the <details> block
+                
                 container.appendChild(details);
             });
         }
@@ -883,6 +1034,7 @@
             tableBody.innerHTML = ''; // Clear old data
 
             let priorityItems = [];
+            // This loop now works correctly
             for (const domainId in assessmentData) {
                 const domain = assessmentData[domainId];
                 const domainMeta = CMM_DATA.domains.find(d => d.id === domainId);
@@ -892,7 +1044,7 @@
                         if (parseInt(practice.targetScore, 10) > parseInt(practice.score, 10)) {
                             priorityItems.push({
                                 domain: domainMeta ? domainMeta.nickname : domainId,
-                                objective: objective.name,
+                                objective: objective.name, // Use the clean name
                                 ...practice
                             });
                         }
@@ -955,16 +1107,16 @@
                 // Not a dynamic field
                 // Check for domain-level fields
                 if (target.id === 'assessment-date') {
-                    assessmentData[activeDomain].date = target.value;
+                    if(assessmentData[activeDomain]) assessmentData[activeDomain].date = target.value;
                 }
                 if (target.id === 'assessment-relevant') {
-                    assessmentData[activeDomain].relevant = target.checked;
+                    if(assessmentData[activeDomain]) assessmentData[activeDomain].relevant = target.checked;
                 }
                 saveState();
                 return;
             }
             
-            const { practice } = getPracticeById(practiceId);
+            const { practice, domainId, objective } = getPracticeById(practiceId);
             if (practice) {
                 let value = target.type === 'checkbox' ? target.checked : target.value;
                 
@@ -975,17 +1127,22 @@
                 
                 practice[field] = value;
                 
-                // Update status if score changed
-                if (field === 'score') {
+                // Update status if score or targetScore changed
+                if (field === 'score' || field === 'targetScore') {
                     const statusCell = document.querySelector(`td[data-status-id="${practiceId}"]`);
                     if (statusCell) {
-                        statusCell.textContent = getStatusFromScore(value);
+                        updateStatusCell(statusCell, practice); // Use helper
                     }
                 }
                 
                 // Save state and update summary
                 saveState();
                 updateAssessmentSummary(activeDomain);
+                
+                // Update objective subtotal
+                if (objective) {
+                    updateObjectiveSubtotal(objective);
+                }
             }
         }
         
@@ -1000,7 +1157,7 @@
         // --- INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             console.log('CTI-CMM Tool Initializing...');
-            loadState();
+            loadState(); // This now correctly builds the data
 
             // Populate Domain Nav
             const domainNav = document.getElementById('domain-nav');
@@ -1033,4 +1190,3 @@
     </script>
 </body>
 </html>
-

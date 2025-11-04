@@ -3,6 +3,11 @@ import pandas as pd
 import json
 import re
 
+import sys
+import pandas as pd
+import json
+import re
+
 def parse_domain_sheet(domain_df, domain_nickname):
     """
     Parses the DataFrame of a single "Domain X" sheet and extracts all
@@ -11,6 +16,9 @@ def parse_domain_sheet(domain_df, domain_nickname):
     objectives_dict = {}
     current_objective_name = None
     current_objective_index = 0
+    
+    # --- FIX: Added state variable to track maturity ---
+    current_maturity_string = "CTI-Unknown"
     
     # Find the header row by looking for 'SCORE' in the 5th column (index 4)
     # We search from row 3 (index 2) onwards
@@ -27,60 +35,83 @@ def parse_domain_sheet(domain_df, domain_nickname):
         # Convert row to list of strings, handling NaNs
         row_values = [str(cell) if pd.notna(cell) else "" for cell in row]
         
-        # Get cell values, stripping whitespace
+        # Get cell values
         obj_name_cell = row_values[1].strip()      # Column B
-        maturity_cell = row_values[1].strip()      # Column B (also)
-        practice_text_cell = row_values[3].strip() # Column D
-        total_cell = row_values[3].strip()         # Column D (Was row_values[0])
+        maturity_cell = row_values[2].strip()      # Column C
+        practice_cell = row_values[3].strip()      # Column D
+        max_cell = row_values[5].strip()           # Column F
 
-        # Check for a new Objective
-        # Objectives look like "1. SOME TEXT" or "2. MORE TEXT"
-        if obj_name_cell and obj_name_cell[0].isdigit() and '.' in obj_name_cell:
+        # --- 1. Check if this is a "Subtotal" or "Domain Total" row ---
+        if "Subtotal" in practice_cell or "Domain Total" in practice_cell:
+            current_objective_name = None # Reset
+            current_maturity_string = "CTI-Unknown" # --- FIX: Reset state ---
+            continue # Skip this row
+
+        # --- 2. Check if this row is a new OBJECTIVE ---
+        elif obj_name_cell and not practice_cell and not max_cell:
             current_objective_name = obj_name_cell
-            # Extract the number (e.g., "1") from "1. IMPROVE ASSET VISIBILITY"
-            current_objective_index = int(re.match(r"^\d+", current_objective_name).group(0))
-            objectives_dict[current_objective_name] = []
-        
-        # Check for a Practice
-        # Practices have "CTI X" in Column B and text in Column D
-        elif maturity_cell.startswith('CTI') and practice_text_cell and current_objective_name:
-            try:
-                # The practice letter (e.g., 'a', 'b') is the first char of the text
-                practice_letter = practice_text_cell.lstrip()[0]
-                
-                # Construct the ID: e.g., "ASSET-1-a"
-                practice_id = f"{domain_nickname}-{current_objective_index}-{practice_letter}"
-                
-                # Max score is in Column F (index 5)
-                practice_max = int(float(row_values[5]))
-                
-                # Create the practice data object with defaults
-                practice = {
-                    "id": practice_id,
-                    "maturity": maturity_cell,
-                    "text": practice_text_cell,
-                    "max": practice_max,
-                    "score": 0,
-                    "targetScore": 0,
-                    "impact": 1,
-                    "loe": 1,
-                    "evidence": "",
-                    "poc": "",
-                    "targetDate": "",
-                    "notes": ""
-                }
-                
-                objectives_dict[current_objective_name].append(practice)
+            current_objective_index += 1
+            current_maturity_string = "CTI-Unknown" # --- FIX: Reset state ---
             
-            except (ValueError, TypeError) as e:
-                print(f"Warning: Could not parse practice row {index} for '{current_objective_name}'. Text: '{practice_text_cell}'. Error: {e}")
-            except Exception as e:
-                print(f"Warning: An unexpected error occurred at row {index} for '{current_objective_name}'. Error: {e}")
+            obj_id = f"{domain_nickname}-{current_objective_index}"
+            
+            # Clean the objective name (remove "1. ", "2. ", etc.)
+            cleaned_name = re.sub(r'^\d+\.\s*', '', current_objective_name).strip()
+            
+            if current_objective_name not in objectives_dict:
+                objectives_dict[current_objective_name] = {
+                    "id": obj_id,
+                    "name": cleaned_name,
+                    "practices": []
+                }
 
-        # Check for the end of the domain section
-        elif total_cell == 'Domain Total':
-            break # Stop processing this sheet
+        # --- 3. Check if this row is a PRACTICE ---
+        elif practice_cell and max_cell.isdigit() and current_objective_name:
+            
+            # --- FIX: Logic to track and reuse maturity level ---
+            practice_maturity_num = re.sub(r'[^\d]', '', maturity_cell) # Gets number from Col C
+            
+            if practice_maturity_num:
+                # A new maturity is specified (e.g., "CTI 1"), update the state
+                current_maturity_string = f"CTI{practice_maturity_num}"
+            else:
+                # Column C is blank, reuse the last known maturity state
+                # If no state was ever set, it will be "CTI-Unknown"
+                pass 
+            # --- End of Fix ---
+            
+            # Extract the letter (a, b, c) from the practice text
+            practice_letter_match = re.match(r'^([a-z])\.\s+', practice_cell)
+            practice_letter = practice_letter_match.group(1) if practice_letter_match else 'x'
+            
+            # Create a unique practice ID
+            practice_id = f"{domain_nickname}-{current_objective_index}-{practice_letter}"
+            
+            practice_obj = {
+                "id": practice_id,
+                "maturity": current_maturity_string, # --- FIX: Use state variable ---
+                "text": practice_cell,
+                "max": int(max_cell),
+                "score": 0,
+                "targetScore": 0,
+                "impact": 1,
+                "loe": 1,
+                "evidence": "",
+                "poc": "",
+                "targetDate": "",
+                "notes": ""
+            }
+            
+            # Add the practice to the *current* objective
+            if current_objective_name in objectives_dict:
+                objectives_dict[current_objective_name]["practices"].append(practice_obj)
+            else:
+                print(f"Warning: Found practice for unknown objective '{current_objective_name}'. Skipping.")
 
+        # --- 4. Check if this is a blank row ---
+        elif not obj_name_cell and not practice_cell:
+            pass # It's a blank row, do nothing, keep current state
+            
     return objectives_dict
 
 def main(input_xlsx_path, output_js_path):
