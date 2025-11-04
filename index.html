@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTI-CMM Assessment Tool</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Chart.js for the dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Load CTI-CMM Data -->
+    <script src="cti-cmm-data.js"></script>
+    <!-- Custom Styles -->
+    <style>
+        /* Custom scrollbar for aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #94a3b8; /* slate-400 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #64748b; /* slate-500 */
+        }
+        ::-webkit-scrollbar-track {
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        /* Ensure inputs in tables don't mess up cell height */
+        td input, td select, td textarea {
+            font-size: 0.875rem; /* text-sm */
+            padding: 0.25rem 0.5rem; /* py-1 px-2 */
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        /* Style for the active nav link */
+        .nav-link.active {
+            background-color: #334155; /* slate-700 */
+            font-weight: 600;
+        }
+        /* Custom class for small table cells */
+        .cell-sm {
+            width: 5rem; /* 80px */
+        }
+        .cell-md {
+            width: 10rem; /* 160px */
+        }
+        .cell-lg {
+            width: 20rem; /* 320px */
+        }
+        /* Hide pages by default */
+        .page {
+            display: none;
+        }
+        
+        /* New styles for the assessment page tables */
+        .assessment-table th, .assessment-table td {
+            font-size: 0.875rem; /* text-sm */
+            padding: 0.5rem 0.75rem; /* py-2 px-3 */
+            vertical-align: top;
+            border-bottom-width: 1px;
+            border-color: #e5e7eb; /* slate-200 */
+        }
+        
+        .assessment-table th {
+            background-color: #f8fafc; /* slate-50 */
+            text-align: left;
+            font-weight: 500; /* medium */
+            color: #475569; /* slate-600 */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.75rem; /* text-xs */
+        }
+
+        .assessment-table .col-practice { width: 30%; }
+        .assessment-table .col-score { width: 70px; }
+        .assessment-table .col-max { width: 50px; }
+        .assessment-table .col-status { width: 120px; }
+        .assessment-table .col-evidence { width: 12%; }
+        .assessment-table .col-poc { width: 12%; }
+        .assessment-table .col-target-score { width: 70px; }
+        .assessment-table .col-impact { width: 90px; }
+        .assessment-table .col-loe { width: 90px; }
+        .assessment-table .col-target-date { width: 110px; }
+        .assessment-table .col-notes { width: 18%; }
+
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-900">
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Navigation -->
+        <nav class="w-64 bg-slate-800 text-slate-200 flex-shrink-0 overflow-y-auto">
+            <div class="p-4">
+                <h1 class="text-xl font-bold text-white">CTI-CMM Tool</h1>
+                <span class="text-sm text-slate-400">Assessment v1.2</span>
+            </div>
+            <ul id="main-nav" class="space-y-1 p-2">
+                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="home">Home</a></li>
+                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="dashboard">Dashboard</a></li>
+                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="priorities">Priorities Sheet</a></li>
+                
+                <!-- Domains Section -->
+                <li class="pt-4">
+                    <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Assessment Domains</h2>
+                    <ul id="domain-nav" class="mt-1 space-y-1">
+                        <!-- Domain links will be injected here by JS -->
+                    </ul>
+                </li>
+
+                <!-- Data Management -->
+                <li class="pt-8">
+                    <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Data</h2>
+                    <div class="p-2">
+                        <button id="reset-data" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-3 rounded-md">
+                            Reset All Data
+                        </button>
+                        <p class="mt-2 text-xs text-slate-500">
+                            Clears all saved scores from your browser. This cannot be undone.
+                        </p>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="flex-1 overflow-y-auto p-6 md:p-8">
+            
+            <!-- Home Page -->
+            <div id="page-home" class="page max-w-4xl mx-auto">
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <h2 class="text-3xl font-bold text-slate-800 mb-4">Cyber Threat Intelligence Capability Maturity Model (CTI-CMM)</h2>
+                    <p class="text-lg text-slate-600 mb-6">Welcome to the CTI-CMM Assessment Tool (BETA Version 1.2)</p>
+
+                    <div class="prose max-w-none prose-slate">
+                        <p>The Cyber Threat Intelligence Capability Maturity Model (CTI-CMM) is designed to help improve cyber threat intelligence teams' support to cybersecurity and risk management functions, leading to improved security outomes. Its goal is to provide a roadmap on how intelligence programs can mature existing support and process constructs to ultimately strengthen the organization's operational resilience.</p>
+                        
+                        <h3 class="text-xl font-semibold text-slate-800 mt-6 mb-2">How to Use This Tool</h3>
+                        <p>This tool is a stand-alone web application to help you self-evaluate your current maturity posture across each of the CTI-CMM domains.</p>
+                        <ol>
+                            <li><strong>Navigate Domains:</strong> Use the sidebar to select one of the 11 CTI-CMM domains.</li>
+                            <li><strong>Self-Assess:</strong> For each practice, select your current <strong>Score</strong> (0-3) and your desired <strong>Target Score</strong> (0-3).
+                                <ul class="mt-2">
+                                    <li><strong>0:</strong> Not Implemented</li>
+                                    <li><strong>1:</strong> Partially Implemented</li>
+                                    <li><strong>2:</strong> Largely Implemented</li>
+                                    <li><strong>3:</strong> Fully Implemented</li>
+                                </ul>
+                            </li>
+                            <li><strong>Add Context:</strong> Fill in the optional <strong>Impact</strong>, <strong>LOE</strong>, <strong>Evidence</strong>, <strong>POC</strong>, and <strong>Notes</strong> fields. This data is used in the "Priorities Sheet".</li>
+                            <li><strong>Auto-Save:</strong> All your entries are saved to your browser's local storage automatically. You can leave and come back at any time.</li>
+                            <li><strong>View Results:</strong>
+                                <ul>
+                                    <li>The <strong>Dashboard</strong> shows your overall maturity and completion percentage for each domain.</li>
+                                    <li>The <strong>Priorities Sheet</strong> aggregates all your assessment items and helps you plan your improvement journey.</li>
+                                </ul>
+                            </li>
+                        </ol>
+                        
+                        <h3 class="text-xl font-semibold text-slate-800 mt-6 mb-2">The 11 CTI-CMM Domains</h3>
+                        <p>The CTI-CMM v1.1 is organized into 11 domains, comprised of two or more objectives:</p>
+                        <ul class="list-decimal list-inside">
+                            <li>Asset, Change, and Configuration Management (ASSET)</li>
+                            <li>Threat and Vulnerability Management (THREAT)</li>
+                            <li>Risk Management (RISK)</li>
+                            <li>Identity and Access Management (ACCESS)</li>
+                            <li>Situational Awareness (SITUATION)</li>
+                            <li>Event and Incident Response, Continuity of Operations (RESPONSE)</li>
+                            <li>Third-Party Risk Management (THIRD-PARTIES)</li>
+                            <li>Fraud and Abuse Management (FRAUD)</li>
+                            <li>Workforce Management (WORKFORCE)</li>
+                            <li>Cybersecurity Architecture (ARCHITECTURE)</li>
+                            <li>Cybersecurity Program Management (PROGRAM)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Page -->
+            <div id="page-dashboard" class="page">
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Assessment Dashboard</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Charts -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-4">Domain Maturity Overview</h3>
+                        <div class="relative h-96 w-full">
+                            <canvas id="maturityRadarChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold mb-4">Overall Progress</h3>
+                        <div class="relative h-96 w-full flex items-center justify-center">
+                            <canvas id="overallProgressDoughnut"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Table -->
+                <div class="mt-8 bg-white rounded-lg shadow-md overflow-hidden">
+                    <h3 class="text-xl font-semibold p-6">Domain Subtotals</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Domain</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Score</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Max Score</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">% Complete</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-table-body" class="bg-white divide-y divide-slate-200">
+                                <!-- Table rows will be injected here by JS -->
+                            </tbody>
+                            <tfoot class="bg-slate-50">
+                                <tr id="dashboard-table-footer" class="font-bold">
+                                    <!-- Footer totals will be injected here by JS -->
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assessment Page (Template) -->
+            <div id="page-assessment" class="page">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="assessment-title" class="text-3xl font-bold text-slate-800"></h2>
+                    <div class="flex space-x-2">
+                        <button id="expand-all" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md text-sm font-medium">Expand All</button>
+                        <button id="collapse-all" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md text-sm font-medium">Collapse All</button>
+                    </div>
+                </div>
+                <!-- Domain-specific header info -->
+                <div class="bg-white p-4 rounded-lg shadow-md mb-6 flex justify-between items-center">
+                    <div>
+                        <span class="font-bold">Date Last Assessed:</span>
+                        <input type="date" id="assessment-date" class="ml-2 p-1 border rounded-md">
+                    </div>
+                    <div>
+                        <label for="assessment-relevant" class="font-bold">Domain is Relevant?</label>
+                        <input type="checkbox" id="assessment-relevant" class="ml-2 h-5 w-5 text-blue-600 rounded">
+                    </div>
+                    <div id="assessment-summary" class="text-right">
+                        <!-- Summary stats injected by JS -->
+                    </div>
+                </div>
+                
+                <!-- Objectives will be injected here -->
+                <div id="assessment-objectives-container" class="space-y-6">
+                    <!-- JS will render objectives here -->
+                </div>
+            </div>
+
+            <!-- Priorities Page -->
+            <div id="page-priorities" class="page">
+                <h2 class="text-3xl font-bold text-slate-800 mb-6">Priorities Planning Sheet</h2>
+
+                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <h3 class="text-xl font-semibold mb-4">What is this?</h3>
+                    <p class="text-slate-600">This planning sheet aggregates all practices where your <strong>Target Score</strong> is greater than your current <strong>Score</strong>. It helps you prioritize items based on their perceived Level of Effort (LOE) and Impact.</p>
+                    
+                    <div class="mt-4 flex items-center space-x-4">
+                        <label for="priority-threshold-impact" class="font-medium">Filter by Min Impact:</label>
+                        <select id="priority-threshold-impact" class="p-2 border rounded-md">
+                            <option value="1">1 (Low)</option>
+                            <option value="2">2 (Med)</option>
+                            <option value="3">3 (High)</option>
+                        </select>
+                        <label for="priority-threshold-loe" class="font-medium">Filter by Max LOE:</label>
+                        <select id="priority-threshold-loe" class="p-2 border rounded-md">
+                            <option value="3">3 (High)</option>
+                            <option value="2">2 (Med)</option>
+                            <option value="1">1 (Low)</option>
+                        </select>
+                        <button id="filter-priorities" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md font-medium">Apply Filter</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Domain</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Objective</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Practice</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Score</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Impact</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">LOE</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target Date</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="priorities-table-body" class="bg-white divide-y divide-slate-200">
+                                <!-- Priority items will be injected here by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // --- DATA MODEL ---
+        // All data is now loaded from cti-cmm-data.js
+        // CMM_DATA.domains contains the domain list
+        // CMM_DATA.assessmentData contains the default structure
+
+        // This object holds all the objectives and practices for each domain.
+        // It's also the structure that will be saved to localStorage.
+        let assessmentData = {};
+
+        // Helper to generate the default data structure
+        function getDefaultAssessmentData() {
+            // Create a deep copy of the default data from the included file
+            // This prevents modifications from affecting the original constant
+            try {
+                return JSON.parse(JSON.stringify(CMM_DATA.assessmentData));
+            } catch (e) {
+                console.error("Failed to deep copy default data:", e);
+                return {}; // Return empty object as a fallback
+            }
+        }
+
+        // --- STATE MANAGEMENT ---
+        const STORAGE_KEY = 'ctiCmmAssessmentData';
+
+        function saveState() {
+            try {
+                const dataToSave = JSON.stringify(assessmentData);
+                localStorage.setItem(STORAGE_KEY, dataToSave);
+                console.log('Assessment data saved.');
+            } catch (error) {
+                console.error('Error saving data to localStorage:', error);
+                // Handle potential full storage
+            }
+        }
+
+        function loadState() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    const parsedData = JSON.parse(savedData);
+                    // Merge saved data with default structure to ensure new practices are added
+                    // This is a simple merge; a more robust merge would be needed if practice IDs changed
+                    assessmentData = deepMerge(getDefaultAssessmentData(), parsedData);
+                    console.log('Assessment data loaded.');
+                } else {
+                    assessmentData = getDefaultAssessmentData();
+                    console.log('No saved data. Initializing default data.');
+                }
+            } catch (error) {
+                console.error('Error loading data from localStorage:', error);
+                assessmentData = getDefaultAssessmentData();
+            }
+        }
+        
+        // Simple deep merge helper
+        function deepMerge(target, source) {
+            const isObject = (obj) => obj && typeof obj === 'object' && !Array.isArray(obj);
+            let output = Object.assign({}, target);
+            if (isObject(target) && isObject(source)) {
+                Object.keys(source).forEach(key => {
+                    if (isObject(source[key])) {
+                        if (!(key in target))
+                            Object.assign(output, { [key]: source[key] });
+                        else
+                            output[key] = deepMerge(target[key], source[key]);
+                    } else {
+                        Object.assign(output, { [key]: source[key] });
+                    }
+                });
+            }
+            return output;
+        }
+
+        function resetData() {
+            if (confirm('Are you sure you want to reset all assessment data? This action cannot be undone.')) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        }
+
+        // --- UTILITY FUNCTIONS ---
+
+        function getPracticeById(practiceId) {
+            // const [domainId, objectiveIndex, practiceLetter] = practiceId.split('-');
+            
+            // This is a brittle way to find practices, based on the sample ID format.
+            // A better way would be to search, but this is faster.
+            // Let's search instead.
+            
+            for (const domainKey in assessmentData) {
+                const domain = assessmentData[domainKey];
+                if (domain.objectives) {
+                    for (const objective of domain.objectives) {
+                        const practice = objective.practices.find(p => p.id === practiceId);
+                        if (practice) {
+                            return { practice, domainId: domainKey, objective };
+                        }
+                    }
+                }
+            }
+            return { practice: null, domainId: null, objective: null };
+        }
+
+        function getStatusFromScore(score) {
+            score = parseInt(score, 10);
+            switch (score) {
+                case 0: return "Not Implemented";
+                case 1: return "Partially Implemented";
+                case 2: return "Largely Implemented";
+                case 3: return "Fully Implemented";
+                default: return "N/A";
+            }
+        }
+        
+        function calculateDomainScores(domainId) {
+            const domain = assessmentData[domainId];
+            let totalScore = 0;
+            let totalMax = 0;
+            let totalTargetScore = 0;
+            
+            if (domain && domain.objectives) {
+                for (const objective of domain.objectives) {
+                    for (const practice of objective.practices) {
+                        totalScore += parseInt(practice.score, 10) || 0;
+                        totalMax += parseInt(practice.max, 10) || 0;
+                        totalTargetScore += parseInt(practice.targetScore, 10) || 0;
+                    }
+                }
+            }
+            
+            const percent = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
+            const targetPercent = totalMax > 0 ? (totalTargetScore / totalMax) * 100 : 0;
+            
+            return { totalScore, totalMax, percent, totalTargetScore, targetPercent };
+        }
+
+        function calculateAllScores() {
+            let grandTotalScore = 0;
+            let grandTotalMax = 0;
+            let grandTotalTargetScore = 0;
+
+            const domainScores = CMM_DATA.domains.map(domain => {
+                const scores = calculateDomainScores(domain.id);
+                grandTotalScore += scores.totalScore;
+                grandTotalMax += scores.totalMax;
+                grandTotalTargetScore += scores.totalTargetScore;
+                return { ...domain, ...scores };
+            });
+
+            const overallPercent = grandTotalMax > 0 ? (grandTotalScore / grandTotalMax) * 100 : 0;
+            const overallTargetPercent = grandTotalMax > 0 ? (grandTotalTargetScore / grandTotalMax) * 100 : 0;
+
+            return { 
+                domainScores, 
+                grandTotalScore, 
+                grandTotalMax, 
+                grandTotalTargetScore, 
+                overallPercent, 
+                overallTargetPercent 
+            };
+        }
+
+        // --- PAGE RENDERING ---
+
+        let activePage = 'home';
+        let activeDomain = null;
+        let chartInstances = {
+            radar: null,
+            doughnut: null
+        };
+
+        function showPage(pageId, domainId = null) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.style.display = 'none';
+            });
+            // Show the target page
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) {
+                targetPage.style.display = 'block';
+            }
+
+            // Update nav active state
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === pageId && (!domainId || link.dataset.domain === domainId)) {
+                    link.classList.add('active');
+                }
+            });
+
+            activePage = pageId;
+            activeDomain = domainId;
+
+            // Call render functions
+            switch (pageId) {
+                case 'home':
+                    renderHomePage();
+                    break;
+                case 'dashboard':
+                    renderDashboardPage();
+                    break;
+                case 'assessment':
+                    if (domainId) {
+                        renderAssessmentPage(domainId);
+                    }
+                    break;
+                case 'priorities':
+                    renderPrioritiesPage();
+                    break;
+            }
+        }
+
+        function renderHomePage() {
+            // Content is static HTML, nothing to render
+        }
+
+        function renderDashboardPage() {
+            const { domainScores, grandTotalScore, grandTotalMax, grandTotalTargetScore, overallPercent, overallTargetPercent } = calculateAllScores();
+            
+            // 1. Populate Table
+            const tableBody = document.getElementById('dashboard-table-body');
+            tableBody.innerHTML = ''; // Clear old data
+            
+            domainScores.forEach(domain => {
+                const row = `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-4 px-6 text-sm font-medium text-slate-900">${domain.name}</td>
+                        <td class="py-4 px-6 text-sm text-slate-500">${domain.totalScore}</td>
+                        <td class="py-4 px-6 text-sm text-slate-500">${domain.totalMax}</td>
+                        <td class="py-4 px-6 text-sm text-slate-500">
+                            <div class="w-full bg-slate-200 rounded-full h-2.5">
+                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${domain.percent.toFixed(0)}%"></div>
+                            </div>
+                            <span class="text-xs">${domain.percent.toFixed(1)}%</span>
+                        </td>
+                        <td class="py-4 px-6 text-sm text-slate-500">
+                             <div class="w-full bg-slate-200 rounded-full h-2.5">
+                                <div class="bg-green-600 h-2.5 rounded-full" style="width: ${domain.targetPercent.toFixed(0)}%"></div>
+                            </div>
+                            <span class="text-xs">${domain.targetPercent.toFixed(1)}%</span>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+
+            // 2. Populate Table Footer
+            const tableFooter = document.getElementById('dashboard-table-footer');
+            tableFooter.innerHTML = `
+                <td class="py-4 px-6 text-sm">Total</td>
+                <td class="py-4 px-6 text-sm">${grandTotalScore}</td>
+                <td class="py-4 px-6 text-sm">${grandTotalMax}</td>
+                <td class="py-4 px-6 text-sm">${overallPercent.toFixed(1)}%</td>
+                <td class="py-4 px-6 text-sm">${overallTargetPercent.toFixed(1)}%</td>
+            `;
+
+            // 3. Render Radar Chart
+            const radarCtx = document.getElementById('maturityRadarChart').getContext('2d');
+            if (chartInstances.radar) {
+                chartInstances.radar.destroy();
+            }
+            chartInstances.radar = new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: domainScores.map(d => d.nickname),
+                    datasets: [
+                        {
+                            label: 'Current Maturity %',
+                            data: domainScores.map(d => d.percent),
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)', // blue
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        },
+                        {
+                            label: 'Target Maturity %',
+                            data: domainScores.map(d => d.targetPercent),
+                            backgroundColor: 'rgba(22, 163, 74, 0.2)', // green
+                            borderColor: 'rgba(22, 163, 74, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'rgba(22, 163, 74, 1)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 4. Render Doughnut Chart
+            const doughnutCtx = document.getElementById('overallProgressDoughnut').getContext('2d');
+            if (chartInstances.doughnut) {
+                chartInstances.doughnut.destroy();
+            }
+            chartInstances.doughnut = new Chart(doughnutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Complete', 'Remaining'],
+                    datasets: [{
+                        data: [grandTotalScore, grandTotalMax - grandTotalScore],
+                        backgroundColor: ['rgba(59, 130, 246, 1)', 'rgba(229, 231, 235, 1)'],
+                        borderColor: ['rgba(59, 130, 246, 1)', 'rgba(229, 231, 235, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false },
+                        title: {
+                            display: true,
+                            text: `${overallPercent.toFixed(1)}%`,
+                            position: 'top', // 'bottom' to put it in center
+                            font: { size: 40, weight: 'bold' },
+                            color: '#1e293b',
+                            padding: 0
+                        },
+                        subtitle: {
+                            display: true,
+                            text: 'Overall Completion',
+                            font: { size: 16 },
+                            color: '#64748b',
+                            padding: { bottom: 30 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Helper: Create form elements dynamically
+        function createSelect(options, selectedValue, practiceId, field) {
+            const select = document.createElement('select');
+            select.className = "p-1 border rounded-md bg-white w-full"; // Changed to w-full
+            select.dataset.id = practiceId;
+            select.dataset.field = field;
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.text = opt.text;
+                if (opt.value == selectedValue) { // Use == for loose comparison
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            return select;
+        }
+        
+        function createInput(type, value, practiceId, field, placeholder = '') {
+            const input = document.createElement('input');
+            input.type = type;
+            input.className = "p-1 border rounded-md w-full";
+            input.value = value;
+            input.dataset.id = practiceId;
+            input.dataset.field = field;
+            input.placeholder = placeholder;
+            return input;
+        }
+        
+        function createTextarea(value, practiceId, field, placeholder = '') {
+            const textarea = document.createElement('textarea');
+            textarea.className = "p-1 border rounded-md w-full";
+            textarea.rows = 2;
+            textarea.value = value;
+            textarea.dataset.id = practiceId;
+            textarea.dataset.field = field;
+            textarea.placeholder = placeholder;
+            return textarea;
+        }
+
+        function renderAssessmentPage(domainId) {
+            const domain = CMM_DATA.domains.find(d => d.id === domainId);
+            const domainData = assessmentData[domainId];
+            if (!domain || !domainData) {
+                console.error('Domain not found:', domainId);
+                return;
+            }
+
+            // Set title
+            document.getElementById('assessment-title').textContent = domain.name;
+
+            // Set header fields
+            document.getElementById('assessment-date').value = domainData.date;
+            document.getElementById('assessment-relevant').checked = domainData.relevant;
+
+            // Render summary
+            updateAssessmentSummary(domainId);
+
+            // Render objectives
+            const container = document.getElementById('assessment-objectives-container');
+            container.innerHTML = ''; // Clear old data
+
+            const scoreOptions = [
+                { value: 0, text: "0" }, { value: 1, text: "1" }, { value: 2, text: "2" }, { value: 3, text: "3" }
+            ];
+            const impactOptions = [
+                { value: 1, text: "1-Low" }, { value: 2, text: "2-Med" }, { value: 3, text: "3-High" }
+            ];
+
+            domainData.objectives.forEach((objective, objIndex) => {
+                // Create objective container (using details/summary for collapse)
+                const details = document.createElement('details');
+                details.className = "bg-white rounded-lg shadow-md overflow-hidden";
+                details.open = true; // Open by default
+                
+                const summary = document.createElement('summary');
+                summary.className = "cursor-pointer bg-slate-100 p-4 font-semibold text-lg hover:bg-slate-200 flex justify-between";
+                summary.textContent = objective.name;
+                details.appendChild(summary);
+
+                // Group practices by maturity
+                const practicesByMaturity = {
+                    'CTI 1': [],
+                    'CTI 2': [],
+                    'CTI 3': []
+                };
+                
+                objective.practices.forEach(practice => {
+                    if (practicesByMaturity.hasOwnProperty(practice.maturity)) {
+                        practicesByMaturity[practice.maturity].push(practice);
+                    }
+                });
+
+                // Create a container for the maturity groups
+                const maturityGroupsContainer = document.createElement('div');
+                maturityGroupsContainer.className = "p-4 space-y-4";
+
+                // Loop over CTI 1, CTI 2, CTI 3 and render tables
+                for (const maturityLevel of ['CTI 1', 'CTI 2', 'CTI 3']) {
+                    const practices = practicesByMaturity[maturityLevel];
+                    if (practices.length === 0) continue; // Don't render if no practices for this level
+                    
+                    // Create group header (e.g., "CTI 1 - Foundational")
+                    const groupHeader = document.createElement('h4');
+                    groupHeader.className = "text-md font-semibold text-slate-700 pt-2";
+                    let maturityName = "Foundational";
+                    if (maturityLevel === 'CTI 2') maturityName = "Intermediate";
+                    if (maturityLevel === 'CTI 3') maturityName = "Advanced";
+                    groupHeader.textContent = `${maturityLevel} - ${maturityName}`;
+                    maturityGroupsContainer.appendChild(groupHeader);
+                    
+                    // Create table for this group
+                    const tableContainer = document.createElement('div');
+                    tableContainer.className = "overflow-x-auto border rounded-md";
+                    
+                    const table = document.createElement('table');
+                    table.className = "min-w-full assessment-table";
+                    
+                    table.innerHTML = `
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="col-practice">Practice</th>
+                                <th class="col-score">Score</th>
+                                <th class="col-max">Max</th>
+                                <th class="col-status">Status</th>
+                                <th class="col-evidence">Evidence</th>
+                                <th class="col-poc">POC</th>
+                                <th class="col-target-score">Target</th>
+                                <th class="col-impact">Impact</th>
+                                <th class="col-loe">LOE</th>
+                                <th class="col-target-date">Target Date</th>
+                                <th class="col-notes">Notes</th>
+                            </tr>
+                        </thead>
+                    `;
+                    
+                    const tbody = document.createElement('tbody');
+                    tbody.className = "bg-white divide-y divide-slate-200";
+
+                    practices.forEach(practice => {
+                        const row = document.createElement('tr');
+                        row.className = "hover:bg-slate-50";
+
+                        // Practice Text
+                        const cellText = document.createElement('td');
+                        cellText.textContent = practice.text;
+                        row.appendChild(cellText);
+
+                        // Score
+                        const cellScore = document.createElement('td');
+                        cellScore.appendChild(createSelect(scoreOptions, practice.score, practice.id, 'score'));
+                        row.appendChild(cellScore);
+
+                        // Max
+                        const cellMax = document.createElement('td');
+                        cellMax.textContent = practice.max;
+                        row.appendChild(cellMax);
+                        
+                        // Status
+                        const cellStatus = document.createElement('td');
+                        cellStatus.className = "font-medium";
+                        cellStatus.textContent = getStatusFromScore(practice.score);
+                        cellStatus.dataset.statusId = practice.id;
+                        row.appendChild(cellStatus);
+                        
+                        // Evidence
+                        const cellEvidence = document.createElement('td');
+                        cellEvidence.appendChild(createInput('text', practice.evidence, practice.id, 'evidence', 'Link/doc...'));
+                        row.appendChild(cellEvidence);
+                        
+                        // POC
+                        const cellPoc = document.createElement('td');
+                        cellPoc.appendChild(createInput('text', practice.poc, practice.id, 'poc', 'Name/team...'));
+                        row.appendChild(cellPoc);
+                        
+                        // Target Score
+                        const cellTarget = document.createElement('td');
+                        cellTarget.appendChild(createSelect(scoreOptions, practice.targetScore, practice.id, 'targetScore'));
+                        row.appendChild(cellTarget);
+                        
+                        // Impact
+                        const cellImpact = document.createElement('td');
+                        cellImpact.appendChild(createSelect(impactOptions, practice.impact, practice.id, 'impact'));
+                        row.appendChild(cellImpact);
+                        
+                        // LOE
+                        const cellLoe = document.createElement('td');
+                        cellLoe.appendChild(createSelect(impactOptions, practice.loe, practice.id, 'loe'));
+                        row.appendChild(cellLoe);
+                        
+                        // Target Date
+                        const cellDate = document.createElement('td');
+                        cellDate.appendChild(createInput('date', practice.targetDate, practice.id, 'targetDate'));
+                        row.appendChild(cellDate);
+                        
+                        // Notes
+                        const cellNotes = document.createElement('td');
+                        cellNotes.appendChild(createTextarea(practice.notes, practice.id, 'notes', 'Reasoning...'));
+                        row.appendChild(cellNotes);
+
+                        tbody.appendChild(row);
+                     });
+                    
+                    table.appendChild(tbody);
+                    tableContainer.appendChild(table);
+                    maturityGroupsContainer.appendChild(tableContainer);
+                }
+
+                details.appendChild(maturityGroupsContainer);
+                container.appendChild(details);
+            });
+        }
+        
+        function updateAssessmentSummary(domainId) {
+            const { totalScore, totalMax, percent } = calculateDomainScores(domainId);
+            const summaryEl = document.getElementById('assessment-summary');
+            if (summaryEl) {
+                summaryEl.innerHTML = `
+                    <span class="font-bold">Domain Score:</span> ${totalScore} / ${totalMax}
+                    <span class="font-bold ml-4">Completion:</span> ${percent.toFixed(1)}%
+                `;
+            }
+        }
+
+        function renderPrioritiesPage() {
+            const minImpact = parseInt(document.getElementById('priority-threshold-impact').value, 10);
+            const maxLoe = parseInt(document.getElementById('priority-threshold-loe').value, 10);
+            
+            const tableBody = document.getElementById('priorities-table-body');
+            tableBody.innerHTML = ''; // Clear old data
+
+            let priorityItems = [];
+            for (const domainId in assessmentData) {
+                const domain = assessmentData[domainId];
+                const domainMeta = CMM_DATA.domains.find(d => d.id === domainId);
+                
+                domain.objectives.forEach(objective => {
+                    objective.practices.forEach(practice => {
+                        if (parseInt(practice.targetScore, 10) > parseInt(practice.score, 10)) {
+                            priorityItems.push({
+                                domain: domainMeta ? domainMeta.nickname : domainId,
+                                objective: objective.name,
+                                ...practice
+                            });
+                        }
+                    });
+                });
+            }
+
+            // Filter items
+            const filteredItems = priorityItems.filter(item => {
+                return parseInt(item.impact, 10) >= minImpact && parseInt(item.loe, 10) <= maxLoe;
+            });
+            
+            // Sort items: High Impact, Low LOE
+            filteredItems.sort((a, b) => {
+                const scoreA = parseInt(a.impact, 10) * 10 - parseInt(a.loe, 10); // High impact = good, low loe = good
+                const scoreB = parseInt(b.impact, 10) * 10 - parseInt(b.loe, 10);
+                return scoreB - scoreA;
+            });
+
+            if (filteredItems.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-500">No priority items match your criteria. Try adjusting your Target Scores or filters.</td></tr>`;
+                return;
+            }
+
+            filteredItems.forEach(item => {
+                const row = `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-4 px-4 text-sm font-medium text-slate-900">${item.domain}</td>
+                        <td class="py-4 px-4 text-sm text-slate-500">${item.objective.substring(0, 50)}...</td>
+                        <td class="py-4 px-4 text-sm text-slate-700">${item.text.substring(0, 70)}...</td>
+                        <td class="py-4 px-4 text-sm text-slate-500">${item.score}</td>
+                        <td class="py-4 px-4 text-sm text-slate-500 font-bold text-green-600">${item.targetScore}</td>
+                        <td class="py-4 px-4 text-sm text-slate-500">${item.impact}</td>
+                        <td class="py-4 px-4 text-sm text-slate-500">${item.loe}</td>
+                        <td class="py-4 px-4 text-sm text-slate-500">${item.targetDate}</td>
+                        <td class="py-4 px-4 text-sm text-slate-500">${item.notes.substring(0, 50)}...</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // --- EVENT HANDLERS ---
+        function handleNavClick(e) {
+            e.preventDefault();
+            const target = e.target.closest('.nav-link');
+            if (target) {
+                const pageId = target.dataset.page;
+                const domainId = target.dataset.domain;
+                showPage(pageId, domainId);
+            }
+        }
+        
+        function handleAssessmentChange(e) {
+            const target = e.target;
+            const practiceId = target.dataset.id;
+            const field = target.dataset.field;
+            
+            if (!practiceId || !field) {
+                // Not a dynamic field
+                // Check for domain-level fields
+                if (target.id === 'assessment-date') {
+                    assessmentData[activeDomain].date = target.value;
+                }
+                if (target.id === 'assessment-relevant') {
+                    assessmentData[activeDomain].relevant = target.checked;
+                }
+                saveState();
+                return;
+            }
+            
+            const { practice } = getPracticeById(practiceId);
+            if (practice) {
+                let value = target.type === 'checkbox' ? target.checked : target.value;
+                
+                // Convert numbers
+                if (field === 'score' || field === 'targetScore' || field === 'impact' || field === 'loe' || field === 'max') {
+                    value = parseInt(value, 10);
+                }
+                
+                practice[field] = value;
+                
+                // Update status if score changed
+                if (field === 'score') {
+                    const statusCell = document.querySelector(`td[data-status-id="${practiceId}"]`);
+                    if (statusCell) {
+                        statusCell.textContent = getStatusFromScore(value);
+                    }
+                }
+                
+                // Save state and update summary
+                saveState();
+                updateAssessmentSummary(activeDomain);
+            }
+        }
+        
+        function handleCollapseExpand(e) {
+            const action = e.target.id;
+            const detailsElements = document.querySelectorAll('#page-assessment details');
+            detailsElements.forEach(details => {
+                details.open = (action === 'expand-all');
+            });
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('CTI-CMM Tool Initializing...');
+            loadState();
+
+            // Populate Domain Nav
+            const domainNav = document.getElementById('domain-nav');
+            CMM_DATA.domains.forEach(domain => {
+                const li = document.createElement('li');
+                li.innerHTML = `<a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700 text-sm" data-page="assessment" data-domain="${domain.id}">${domain.nickname}</a>`;
+                domainNav.appendChild(li);
+            });
+
+            // Attach Global Event Listeners
+            document.getElementById('main-nav').addEventListener('click', handleNavClick);
+            document.getElementById('reset-data').addEventListener('click', resetData);
+            
+            // Assessment page listeners
+            const assessmentPage = document.getElementById('page-assessment');
+            assessmentPage.addEventListener('change', handleAssessmentChange);
+            document.getElementById('expand-all').addEventListener('click', handleCollapseExpand);
+            document.getElementById('collapse-all').addEventListener('click', handleCollapseExpand);
+            
+            // Priorities page listeners
+            document.getElementById('filter-priorities').addEventListener('click', renderPrioritiesPage);
+            document.getElementById('priority-threshold-impact').addEventListener('change', renderPrioritiesPage);
+            document.getElementById('priority-threshold-loe').addEventListener('change', renderPrioritiesPage);
+
+            // Show initial page
+            showPage('home');
+            console.log('...Initialization Complete.');
+        });
+
+    </script>
+</body>
+</html>
+
