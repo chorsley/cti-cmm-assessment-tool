@@ -197,17 +197,17 @@
                     <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Settings</h2>
                     <div class="p-3 text-sm">
                         <label class="flex items-center justify-between cursor-pointer">
-                        <span class="text-slate-200">Planning Mode</span>
-                        <div class="relative">
-                            <input type="checkbox" id="mode-toggle" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-600 rounded-full peer-checked:bg-blue-600"></div>
-                            <div class="absolute top-0.5 left-[2px] bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-full"></div>
-                        </div>
-                    </label>
-                    <p class="mt-2 text-xs text-slate-500">
-                        Enable to show Target, Priority, and planning fields.
-                    </p>
-                </div>
+                            <span class="text-slate-200">Planning Mode</span>
+                            <div class="relative">
+                                <input type="checkbox" id="mode-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-600 rounded-full peer-checked:bg-blue-600"></div>
+                                <div class="absolute top-0.5 left-[2px] bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-full"></div>
+                            </div>
+                        </label>
+                        <p class="mt-2 text-xs text-slate-500">
+                            Enable to show Target, Priority, and planning fields.
+                        </p>
+                    </div>
                 </li>
                 <li class="pt-8">
                     <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Data</h2>
@@ -371,9 +371,16 @@
                             <option value="2">2 (Med)</option>
                             <option value="1">1 (Low)</option>
                         </select>
+                        <label for="priority-sort-by" class="font-medium">Sort by:</label>
+                        <select id="priority-sort-by" class="p-2 border rounded-md">
+                            <option value="priority">Priority (High-Low)</option>
+                            <option value="impact">Impact (High-Low)</option>
+                            <option value="loe">Effort (Low-High)</option>
+                            <option value="domain">Domain (A-Z)</option>
+                        </select>
                         <button id="filter-priorities" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md font-medium">Apply Filter</button>
                     </div>
-                </div>
+                    </div>
 
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
                     <div class="overflow-x-auto">
@@ -385,6 +392,7 @@
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Practice</th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Score</th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Priority</th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Impact</th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Effort</th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target Date</th>
@@ -1024,7 +1032,7 @@
         function updateNavVisibility() {
             // Select the <a> tag first
             const planningNavLinks = document.querySelectorAll('a[data-page="priorities"]');
-
+            
             // Loop over the <a> tags and hide/show their parent <LI> element
             planningNavLinks.forEach(link => {
                 if (link.parentElement) { // Safety check
@@ -1168,7 +1176,7 @@ function renderAssessmentPage(domainId) {
                         // Col 1: Current Maturity
                         const cellCurrent = document.createElement('td');
                         cellCurrent.className = "pb-2 pl-4 w-[180px]";
-                        cellCurrent.innerHTML = `<div class="widget-label" title="Your current score">Current</div>`;
+                        cellCurrent.innerHTML = `<div class="widget-label" title="Your current score">Current level</div>`;
                         cellCurrent.appendChild(createCurrentMaturityWidget(practice));
                         rowWidgets1.appendChild(cellCurrent);
 
@@ -1226,7 +1234,7 @@ function renderAssessmentPage(domainId) {
                             // Col 1: Target Maturity
                             const cellTarget = document.createElement('td');
                             cellTarget.className = "pb-4 pl-4 w-[180px]";
-                            cellTarget.innerHTML = `<div class="widget-label" title="Your target score">Target</div>`;
+                            cellTarget.innerHTML = `<div class="widget-label" title="Your target score">Target level</div>`;
                             cellTarget.appendChild(createTargetMaturityWidget(practice));
                             rowWidgets2.appendChild(cellTarget);
 
@@ -1304,9 +1312,13 @@ function renderAssessmentPage(domainId) {
             }
         }
 
+        // ==================================
+        // === START MODIFICATION: RE-WRITE renderPrioritiesPage ===
+        // ==================================
         function renderPrioritiesPage() {
             const minImpact = parseInt(document.getElementById('priority-threshold-impact').value, 10);
             const maxLoe = parseInt(document.getElementById('priority-threshold-loe').value, 10);
+            const sortBy = document.getElementById('priority-sort-by').value; // Get sort value
             
             const tableBody = document.getElementById('priorities-table-body');
             tableBody.innerHTML = ''; // Clear old data
@@ -1332,32 +1344,46 @@ function renderAssessmentPage(domainId) {
 
             // Filter items
             const filteredItems = priorityItems.filter(item => {
-                return parseInt(item.impact, 10) >= minImpact && parseInt(item.loe, 10) <= maxLoe;
+                const impact = parseInt(item.impact, 10) || 1;
+                const loe = parseInt(item.loe, 10) || 3;
+                return impact >= minImpact && loe <= maxLoe;
             });
             
             // Sort items: Use new calculatePriority function
             filteredItems.sort((a, b) => {
-                const scoreA = calculatePriority(a.impact, a.loe);
-                const scoreB = calculatePriority(b.impact, b.loe);
-                // Handle non-numeric '-'
-                if (scoreA === '-') return 1;
-                if (scoreB === '-') return -1;
-                return scoreB - scoreA; // Sort descending
+                switch (sortBy) {
+                    case 'priority':
+                    default:
+                        const scoreA = calculatePriority(a.impact, a.loe);
+                        const scoreB = calculatePriority(b.impact, b.loe);
+                        if (scoreA === '-') return 1;
+                        if (scoreB === '-') return -1;
+                        return scoreB - scoreA; // Descending
+                    case 'impact':
+                        return (parseInt(b.impact, 10) || 0) - (parseInt(a.impact, 10) || 0); // Descending
+                    case 'loe':
+                        return (parseInt(a.loe, 10) || 1) - (parseInt(b.loe, 10) || 1); // Ascending (1-Low, 3-High)
+                    case 'domain':
+                        return a.domain.localeCompare(b.domain); // A-Z
+                }
             });
 
             if (filteredItems.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-500">No priority items match your criteria. Try adjusting your Target Scores or filters.</td></tr>`;
+                // Update colspan to 10
+                tableBody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-500">No priority items match your criteria. Try adjusting your Target Scores or filters.</td></tr>`;
                 return;
             }
 
             filteredItems.forEach(item => {
+                const priority = calculatePriority(item.impact, item.loe); // Calculate priority
                 const row = `
                     <tr class="hover:bg-slate-50">
                         <td class="py-4 px-4 text-sm font-medium text-slate-900">${item.domain}</td>
                         <td class="py-4 px-4 text-sm text-slate-500">${item.objective.substring(0, 50)}...</td>
-                        <td class="py-4 px-4 text-sm text-slate-700">${item.text.substring(0, 70)}...</td>
+                        <td class="py-4 px-4 text-sm text-slate-700">${item.slug}</td>
                         <td class="py-4 px-4 text-sm text-slate-500">${item.score}</td>
                         <td class="py-4 px-4 text-sm text-slate-500 font-bold text-green-600">${item.targetScore}</td>
+                        <td class="py-4 px-4 text-sm text-slate-500 font-bold text-center">${priority}</td>
                         <td class="py-4 px-4 text-sm text-slate-500">${item.impact}</td>
                         <td class="py-4 px-4 text-sm text-slate-500">${item.loe}</td>
                         <td class="py-4 px-4 text-sm text-slate-500">${item.targetDate}</td>
@@ -1367,11 +1393,15 @@ function renderAssessmentPage(domainId) {
                 tableBody.innerHTML += row;
             });
         }
+        // ==================================
+        // === END MODIFICATION ===
+        // ==================================
+
 
         // --- EVENT HANDLERS ---
         function handleNavClick(e) {
             const target = e.target.closest('.nav-link');
-
+            
             // Only prevent default IF we clicked a nav link
             if (target) {
                 e.preventDefault(); 
@@ -1476,7 +1506,6 @@ function renderAssessmentPage(domainId) {
         }
         
         function handleModeToggle(e) {
-            console.log('Mode toggle changed:', e.target.checked);
             appMode = e.target.checked ? 'planning' : 'benchmark';
             saveMode();
             updateNavVisibility();
@@ -1509,10 +1538,17 @@ function renderAssessmentPage(domainId) {
             document.getElementById('expand-all').addEventListener('click', handleCollapseExpand);
             document.getElementById('collapse-all').addEventListener('click', handleCollapseExpand);
             
+            // ==================================
+            // === START MODIFICATION: ADD SORT LISTENER ===
+            // ==================================
             // Priorities page listeners
             document.getElementById('filter-priorities').addEventListener('click', renderPrioritiesPage);
             document.getElementById('priority-threshold-impact').addEventListener('change', renderPrioritiesPage);
             document.getElementById('priority-threshold-loe').addEventListener('change', renderPrioritiesPage);
+            document.getElementById('priority-sort-by').addEventListener('change', renderPrioritiesPage);
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
 
             // Show initial page
             updateNavVisibility(); // Hide/show nav links based on mode
