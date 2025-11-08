@@ -199,6 +199,18 @@
             content: '↕'; /* Default icon */
         }
 
+        /* ================================== */
+        /* === START MODIFICATION: Add disable class === */
+        /* ================================== */
+        /* Class to disable assessment content */
+        .content-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        /* ================================== */
+        /* === END MODIFICATION === */
+        /* ================================== */
+
     </style>
 </head>
 <body class="bg-slate-100 font-sans text-slate-900">
@@ -338,7 +350,7 @@
                                     <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Domain</th>
                                     <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Score</th>
                                     <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Max Score</th>
-                                    <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">% Complete</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Score %</th>
                                     <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target %</th>
                                 </tr>
                             </thead>
@@ -374,6 +386,10 @@
                         </div>
                 </div>
                 
+                <div id="assessment-disabled-banner" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
+                    <p class="font-bold">This domain is marked as 'Not Relevant'</p>
+                    <p>It will be excluded from all scoring, totals, and planning. To re-enable, check the "Domain is Relevant?" box above.</p>
+                </div>
                 <div id="assessment-objectives-container" class="space-y-6">
                     </div>
             </div>
@@ -709,6 +725,14 @@
         function calculateDomainScores(domainId) {
             const domain = assessmentData[domainId];
             // ==================================
+            // === START MODIFICATION: Add relevance flag ===
+            // ==================================
+            const relevant = (domain && domain.relevant !== false); // Default to true
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
+            
+            // ==================================
             // === START MODIFICATION: Update scoring logic ===
             // ==================================
             let totalScore = 0;
@@ -741,7 +765,10 @@
             const targetPercent = totalMax > 0 ? (totalTargetScore / totalMax) * 100 : 0;
             const assessmentCompletion = totalPractices > 0 ? (totalAssessed / totalPractices) * 100 : 0;
             
-            return { totalScore, totalMax, percent, totalTargetScore, targetPercent, assessmentCompletion, totalAssessed, totalPractices };
+            // ==================================
+            // === START MODIFICATION: Return relevance flag ===
+            // ==================================
+            return { relevant, totalScore, totalMax, percent, totalTargetScore, targetPercent, assessmentCompletion, totalAssessed, totalPractices };
             // ==================================
             // === END MODIFICATION ===
             // ==================================
@@ -755,16 +782,24 @@
             let grandTotalMax = 0;
             let grandTotalTargetScore = 0;
             let grandTotalAssessed = 0;
-            let grandTotalPractices = 0;
+            let grandTotalPractices = 0; // Only count practices from relevant domains
 
             const domainScores = CMM_DATA.domains.map(domain => {
                 const scores = calculateDomainScores(domain.id);
-                grandTotalScore += scores.totalScore;
-                grandTotalMax += scores.totalMax;
-                grandTotalTargetScore += scores.totalTargetScore;
-                grandTotalAssessed += scores.totalAssessed;
-                grandTotalPractices += scores.totalPractices;
-                return { ...domain, ...scores };
+                // ==================================
+                // === START MODIFICATION: Check relevance before summing ===
+                // ==================================
+                if (scores.relevant) { // Only add to totals if relevant
+                    grandTotalScore += scores.totalScore;
+                    grandTotalMax += scores.totalMax;
+                    grandTotalTargetScore += scores.totalTargetScore;
+                    grandTotalAssessed += scores.totalAssessed;
+                    grandTotalPractices += scores.totalPractices;
+                }
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
+                return { ...domain, ...scores }; // Return all scores for dashboard table
             });
 
             const overallPercent = grandTotalMax > 0 ? (grandTotalScore / grandTotalMax) * 100 : 0;
@@ -861,9 +896,13 @@
             domainScores.forEach(domain => {
                 // Use map for domain name (fixes "nan" bug)
                 const domainName = DOMAIN_NAME_MAP[domain.id] || domain.nickname;
+                // ==================================
+                // === START MODIFICATION: Add row class for relevance ===
+                // ==================================
+                const rowClass = domain.relevant ? "hover:bg-slate-50" : "hover:bg-slate-50 opacity-50 line-through";
                 const row = `
-                    <tr class="hover:bg-slate-50">
-                        <td class="py-4 px-6 text-sm font-medium text-slate-900">${domainName}</td>
+                    <tr class="${rowClass}">
+                <td class="py-4 px-6 text-sm font-medium text-slate-900">${domainName}</td>
                         <td class="py-4 px-6 text-sm text-slate-500">${domain.totalScore}</td>
                         <td class="py-4 px-6 text-sm text-slate-500">${domain.totalMax}</td>
                         <td class="py-4 px-6 text-sm text-slate-500">
@@ -886,7 +925,7 @@
             // 2. Populate Table Footer
             const tableFooter = document.getElementById('dashboard-table-footer');
             tableFooter.innerHTML = `
-                <td class="py-4 px-6 text-sm">Total</td>
+                <td class="py-4 px-6 text-sm">Total (Relevant Domains)</td>
                 <td class="py-4 px-6 text-sm">${grandTotalScore}</td>
                 <td class="py-4 px-6 text-sm">${grandTotalMax}</td>
                 <td class="py-4 px-6 text-sm">${overallPercent.toFixed(1)}%</td>
@@ -905,7 +944,13 @@
                     datasets: [
                         {
                             label: 'Current Maturity %',
-                            data: domainScores.map(d => d.percent),
+                            // ==================================
+                            // === START MODIFICATION: Use relevance for chart ===
+                            // ==================================
+                            data: domainScores.map(d => d.relevant ? d.percent : 0),
+                            // ==================================
+                            // === END MODIFICATION ===
+                            // ==================================
                             backgroundColor: 'rgba(59, 130, 246, 0.2)', // blue
                             borderColor: 'rgba(59, 130, 246, 1)',
                             borderWidth: 2,
@@ -913,7 +958,13 @@
                         },
                         {
                             label: 'Target Maturity %',
-                            data: domainScores.map(d => d.targetPercent),
+                            // ==================================
+                            // === START MODIFICATION: Use relevance for chart ===
+                            // ==================================
+                            data: domainScores.map(d => d.relevant ? d.targetPercent : 0),
+                            // ==================================
+                            // === END MODIFICATION ===
+                            // ==================================
                             backgroundColor: 'rgba(22, 163, 74, 0.2)', // green
                             borderColor: 'rgba(22, 163, 74, 1)',
                             borderWidth: 2,
@@ -984,7 +1035,7 @@
                             // ==================================
                             // === START MODIFICATION: Update doughnut subtitle ===
                             // ==================================
-                            text: 'Overall Assessment',
+                            text: 'Overall Assessment (Relevant Domains)',
                             // ==================================
                             // === END MODIFICATION ===
                             // ==================================
@@ -1237,7 +1288,13 @@
         // ==================================
 
         function updateDotWidget(widgetElement, newScore) {
-            const score = parseInt(newScore, 10);
+            // ==================================
+            // === START MODIFICATION: Handle null score ===
+            // ==================================
+            const score = parseScore(newScore);
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
             const dots = widgetElement.querySelectorAll('.maturity-dot, .target-dot');
             const lines = widgetElement.querySelectorAll('.maturity-line, .target-line');
 
@@ -1245,16 +1302,30 @@
                 dot.classList.remove('active', 'selected');
                 const dotScore = parseInt(dot.dataset.score, 10);
 
-                if (dotScore === score) {
-                    dot.classList.add('active', 'selected');
-                } else if (dotScore < score) {
-                    dot.classList.add('active');
+                // ==================================
+                // === START MODIFICATION: Handle null score ===
+                // ==================================
+                if (score !== null) {
+                    if (dotScore === score) {
+                        dot.classList.add('active', 'selected');
+                    } else if (dotScore < score) {
+                        dot.classList.add('active');
+                    }
                 }
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
 
                 if (index < lines.length) {
                     const line = lines[index];
                     line.classList.remove('active');
-                    if (dotScore < score) {
+                    // ==================================
+                    // === START MODIFICATION: Handle null score ===
+                    // ==================================
+                    if (score !== null && dotScore < score) {
+                    // ==================================
+                    // === END MODIFICATION ===
+                    // ==================================
                         line.classList.add('active');
                     }
                 }
@@ -1283,11 +1354,19 @@
         // ==================================
         function updateSidebarProgress() {
             CMM_DATA.domains.forEach(domain => {
+                // ==================================
+                // === START MODIFICATION: Add relevance styling ===
+                // ==================================
+                // Get relevance from the loaded assessmentData
+                const domainData = assessmentData[domain.id];
+                const relevant = (domainData && domainData.relevant !== false); // Default true
+                
                 const { assessmentCompletion } = calculateDomainScores(domain.id);
                 const percent = assessmentCompletion.toFixed(0);
                 
                 const label = document.querySelector(`[data-progress-label-domain="${domain.id}"]`);
                 const bar = document.querySelector(`[data-progress-bar-domain="${domain.id}"]`);
+                const navLink = document.querySelector(`a[data-domain="${domain.id}"]`);
                 
                 if (label) {
                     label.textContent = `${percent}%`;
@@ -1295,6 +1374,20 @@
                 if (bar) {
                     bar.style.width = `${percent}%`;
                 }
+
+                // Add relevance styling
+                if (navLink) {
+                    if (relevant) {
+                        navLink.style.opacity = '1';
+                        navLink.style.textDecoration = 'none';
+                    } else {
+                        navLink.style.opacity = '0.5';
+                        navLink.style.textDecoration = 'line-through';
+                    }
+                }
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
             });
         }
         // ==================================
@@ -1322,9 +1415,25 @@ function renderAssessmentPage(domainId) {
             // Render summary
             updateAssessmentSummary(domainId);
 
+            // ==================================
+            // === START MODIFICATION: Handle relevance toggle AND FIX VARIABLE NAME ===
+            // ==================================
+            const objectivesContainer = document.getElementById('assessment-objectives-container'); // Use correct variable name
+            const disabledBanner = document.getElementById('assessment-disabled-banner');
+
+            if (domainData.relevant) {
+                objectivesContainer.classList.remove('content-disabled');
+                disabledBanner.classList.add('hidden');
+            } else {
+                objectivesContainer.classList.add('content-disabled');
+                disabledBanner.classList.remove('hidden');
+            }
+            
             // Render objectives
-            const container = document.getElementById('assessment-objectives-container');
-            container.innerHTML = ''; // Clear old data
+            objectivesContainer.innerHTML = ''; // Clear old data
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
 
             const impactOptions = [
                 { value: 1, text: "1-Low" }, { value: 2, text: "2-Med" }, { value: 3, text: "3-High" }
@@ -1576,7 +1685,13 @@ function renderAssessmentPage(domainId) {
                 // ==================================
                 details.appendChild(subtotalEl); // Add it to the <details> block
                 
-                container.appendChild(details);
+                // ==================================
+                // === START MODIFICATION: FIX VARIABLE NAME ===
+                // ==================================
+                objectivesContainer.appendChild(details); // Use correct variable
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
             });
         }
         
@@ -1591,7 +1706,7 @@ function renderAssessmentPage(domainId) {
             if (summaryEl) {
                 summaryEl.innerHTML = `
                     <span class="font-bold">Domain Score:</span> ${totalScore} / ${totalMax}
-                    <span class="font-bold ml-4">Completion:</span> ${percent.toFixed(1)}%
+                    <span class="font-bold ml-4">Score %:</span> ${percent.toFixed(1)}%
                 `;
             }
 
@@ -1636,7 +1751,14 @@ function renderAssessmentPage(domainId) {
             let priorityItems = [];
             // This loop now works correctly
             for (const domainId in assessmentData) {
+                // ==================================
+                // === START MODIFICATION: Check relevance ===
+                // ==================================
                 const domain = assessmentData[domainId];
+                if (domain.relevant === false) continue; // Skip irrelevant domains
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
                 const domainMeta = CMM_DATA.domains.find(d => d.id === domainId);
                 
                 domain.objectives.forEach(objective => {
@@ -1738,7 +1860,7 @@ function renderAssessmentPage(domainId) {
 
             if (priorityItems.length === 0) {
                 // Update colspan to 9
-                tableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-500">No priority items found. (Ensure 'Target' score is higher than 'Current' score for items in Planning Mode).</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-500">No priority items found from relevant domains. (Ensure 'Target' score is higher than 'Current' score).</td></tr>`;
                 return;
             }
 
@@ -1790,7 +1912,14 @@ function renderAssessmentPage(domainId) {
             // 1. Get Data (same logic as renderPrioritiesPage)
             let priorityItems = [];
             for (const domainId in assessmentData) {
+                // ==================================
+                // === START MODIFICATION: Check relevance ===
+                // ==================================
                 const domain = assessmentData[domainId];
+                if (domain.relevant === false) continue; // Skip irrelevant domains
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
                 const domainMeta = CMM_DATA.domains.find(d => d.id === domainId);
                 
                 domain.objectives.forEach(objective => {
@@ -1949,14 +2078,47 @@ function renderAssessmentPage(domainId) {
             if (!practiceId || !field) {
                 // Not a dynamic field
                 // Check for domain-level fields
+                // ==================================
+                // === START MODIFICATION: Handle relevance toggle ===
+                // ==================================
                 if (target.id === 'assessment-date') {
                     if(assessmentData[activeDomain]) assessmentData[activeDomain].date = target.value;
+                    saveState(); // Just save
+                    return; // Done
                 }
                 if (target.id === 'assessment-relevant') {
                     if(assessmentData[activeDomain]) assessmentData[activeDomain].relevant = target.checked;
+                    saveState();
+                    updateSidebarProgress(); // This now handles relevance styling
+                    // Refresh dashboard or priorities if active
+                    if (activePage === 'dashboard') renderDashboardPage();
+                    if (activePage === 'priorities') renderPrioritiesPage();
+
+                    // ==================================
+                    // === START MODIFICATION: Immediately update UI ===
+                    // ==================================
+                    const objectivesContainer = document.getElementById('assessment-objectives-container');
+                    const disabledBanner = document.getElementById('assessment-disabled-banner');
+                    if (target.checked) {
+                        // Is now relevant
+                        objectivesContainer.classList.remove('content-disabled');
+                        disabledBanner.classList.add('hidden');
+                    } else {
+                        // Is now NOT relevant
+                        objectivesContainer.classList.add('content-disabled');
+                        disabledBanner.classList.remove('hidden');
+                    }
+                    // ==================================
+                    // === END MODIFICATION ===
+                    // ==================================
+
+                    return; // Done
                 }
-                saveState();
+                // No other domain-level fields, so just return
                 return;
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
             }
             
             const { practice, domainId, objective } = getPracticeById(practiceId);
@@ -1964,7 +2126,13 @@ function renderAssessmentPage(domainId) {
                 let value = target.type === 'checkbox' ? target.checked : target.value;
                 
                 // Convert numbers
+                // ==================================
+                // === START MODIFICATION: FIX TYPO (H) ===
+                // ==================================
                 if (field === 'score' || field === 'targetScore' || field === 'impact' || field === 'loe' || field === 'max') {
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
                     // ==================================
                     // === START MODIFICATION: Allow nulls, parse ints ===
                     // ==================================
@@ -2045,6 +2213,8 @@ function renderAssessmentPage(domainId) {
                 // If the current score was changed, update progress
                 if (field === 'score') {
                     updateSidebarProgress();
+                    // If we're on the dashboard, refresh it
+                    if (activePage === 'dashboard') renderDashboardPage();
                 }
                 // ==================================
                 // === END MODIFICATION ===
@@ -2151,7 +2321,7 @@ function renderAssessmentPage(domainId) {
             // ==================================
             // === START MODIFICATION: Update sidebar on load ===
             // ==================================
-            updateSidebarProgress();
+            updateSidebarProgress(); // This will now handle progress AND relevance styling
             // ==================================
             // === END MODIFICATION ===
             // ==================================
