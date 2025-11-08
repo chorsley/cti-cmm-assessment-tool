@@ -281,7 +281,7 @@
                                     <li><strong>Planning Mode (On):</strong> Adds fields for `Target` maturity, `Target Date`, `Impact`, `Effort`, and `Priority`.</li>
                                 </ul>
                             </li>
-                            <li class="text-lg text-slate-600 mb-6"><strong>Self-Assess:</strong> For each practice, select your <strong>Current</strong> and <strong>Target</strong> Maturity (0-3) using the clickable dot widgets.</li>
+                            <li class="text-lg text-slate-600 mb-6"><strong>Self-Assess:</strong> For each practice, select your <strong>Current</strong> and <strong>Target</strong> Maturity (0-3) using the clickable dot widgets. Your progress is tracked by the progress bars in the sidebar.</li>
                             <li class="text-lg text-slate-600 mb-6"><strong>Auto-Save:</strong> All your entries are saved to your browser's local storage automatically. You can leave and come back at any time.</li>
                             <li class="text-lg text-slate-600 mb-6"><strong>View Results:</strong>
                                 <ul class="list-disc list-inside">
@@ -383,7 +383,7 @@
 
                 <div class="bg-white p-6 rounded-lg shadow-md mb-6">
                     <h3 class="text-xl font-semibold mb-4">What is this?</h3>
-                    <p class="text-slate-600">This planning sheet aggregates all practices where your <strong>Target Score</strong> is greater than your current <strong>Score</strong>. Click any column header to sort the list and help you plan your improvement journey.</p>
+                    <p class="text-slate-600">This planning sheet aggregates all practices where your <strong>Target Score</strong> is greater than your current <strong>Score</strong> (or where your Current Score is not yet set). Click any column header to sort the list and help you plan your improvement journey.</p>
                     <div class="mt-4">
                         <button id="export-csv" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md font-medium text-sm">
                             Export to CSV
@@ -472,12 +472,26 @@
                         // This is the object { id, name, practices } from the Python script
                         const objectiveData = objectivesFromData[objectiveKey];
                         
+                        // ==================================
+                        // === START MODIFICATION: Set default scores to null ===
+                        // ==================================
+                        // Deep copy practices and set default scores to null
+                        const defaultPractices = JSON.parse(JSON.stringify(objectiveData.practices)).map(p => ({
+                            ...p,
+                            score: null, // Default to null (unset)
+                            targetScore: null, // Default to null (unset)
+                        }));
+                        // ==================================
+                        // === END MODIFICATION ===
+                        // ==================================
+
                         // Add this object to our array
                         newObjectivesArray.push({
                             id: objectiveData.id,        // e.g., "ASSET-1"
                             name: objectiveData.name,      // e.g., "IMPROVE ASSET VISIBILITY"
                             // Deep copy practices array to avoid mutation of original data
-                            practices: JSON.parse(JSON.stringify(objectiveData.practices)) 
+                            // practices: JSON.parse(JSON.stringify(objectiveData.practices)) // OLD
+                            practices: defaultPractices // NEW
                         });
                     }
                 }
@@ -545,6 +559,7 @@
                 if (savedData) {
                     const parsedData = JSON.parse(savedData);
                     // Merge saved data with default structure to ensure new practices are added
+                    // and null defaults are respected
                     assessmentData = deepMerge(defaultData, parsedData);
                     console.log('Assessment data loaded.');
                 } else {
@@ -585,9 +600,27 @@
 
         // --- UTILITY FUNCTIONS ---
 
+        // ==================================
+        // === START MODIFICATION: New score parser ===
+        // ==================================
+        /**
+         * Parses a score from the data model.
+         * Returns null if unset (null, undefined), otherwise returns the integer value.
+         */
+        function parseScore(score) {
+            if (score === null || score === undefined) {
+                return null;
+            }
+            const intScore = parseInt(score, 10);
+            return isNaN(intScore) ? null : intScore;
+        }
+        // ==================================
+        // === END MODIFICATION ===
+        // ==================================
+
         function getPracticeById(practiceId) {
             // This function relies on the `assessmentData` structure created
-            // by the (now fixed) getDefaultAssessmentData()
+            // by the (now fixed) getDefaultAssessmentData
             for (const domainKey in assessmentData) {
                 const domain = assessmentData[domainKey];
                 if (domain.objectives) {
@@ -603,13 +636,21 @@
         }
 
         function getStatusFromScore(score) {
-            score = parseInt(score, 10);
+            // ==================================
+            // === START MODIFICATION: Handle null score ===
+            // ==================================
+            score = parseScore(score);
+            if (score === null) return "Not Assessed";
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
+
             switch (score) {
                 case 0: return "Not Implemented";
                 case 1: return "Partially Implemented";
                 case 2: return "Largely Implemented";
                 case 3: return "Fully Implemented";
-                default: return "N/A";
+                default: return "Not Assessed";
             }
         }
 
@@ -633,61 +674,102 @@
             const subtotalEl = document.querySelector(`div[data-objective-id="${objective.name}"]`);
             if (!subtotalEl) return;
 
+            // ==================================
+            // === START MODIFICATION: Update subtotal logic ===
+            // ==================================
             let objTotalScore = 0;
             let objTotalMax = 0;
+            let objTotalAssessed = 0;
+            let objTotalPractices = 0;
             
             objective.practices.forEach(practice => {
-                objTotalScore += parseInt(practice.score, 10) || 0;
+                objTotalPractices++;
+                const currentScore = parseScore(practice.score);
+
+                if (currentScore !== null) {
+                    objTotalAssessed++;
+                    objTotalScore += currentScore;
+                }
                 objTotalMax += parseInt(practice.max, 10) || 0;
             });
             
             const objPercent = objTotalMax > 0 ? (objTotalScore / objTotalMax) * 100 : 0;
+            const objCompletion = objTotalPractices > 0 ? (objTotalAssessed / objTotalPractices) * 100 : 0;
             
             subtotalEl.innerHTML = `
-                <span>Section Subtotal:</span>
-                <span>Score: ${objTotalScore}</span>
-                <span>Max: ${objTotalMax}</span>
-                <span>${objPercent.toFixed(1)}%</span>
+                <span class="font-semibold">Section Subtotal:</span>
+                <span class="text-right">Completed: ${objTotalAssessed} / ${objTotalPractices} (${objCompletion.toFixed(1)}%)</span>
+                <span class="text-right">Score: ${objTotalScore} / ${objTotalMax} (${objPercent.toFixed(1)}%)</span>
             `;
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
         }
 
         function calculateDomainScores(domainId) {
             const domain = assessmentData[domainId];
+            // ==================================
+            // === START MODIFICATION: Update scoring logic ===
+            // ==================================
             let totalScore = 0;
             let totalMax = 0;
             let totalTargetScore = 0;
+            let totalAssessed = 0;
+            let totalPractices = 0;
             
             if (domain && domain.objectives) {
                 for (const objective of domain.objectives) {
                     for (const practice of objective.practices) {
-                        totalScore += parseInt(practice.score, 10) || 0;
+                        totalPractices++;
+                        const currentScore = parseScore(practice.score);
+                        const targetScore = parseScore(practice.targetScore);
+
+                        if (currentScore !== null) {
+                            totalAssessed++;
+                            totalScore += currentScore;
+                        }
+                        if (targetScore !== null) {
+                            totalTargetScore += targetScore;
+                        }
+                        
                         totalMax += parseInt(practice.max, 10) || 0;
-                        totalTargetScore += parseInt(practice.targetScore, 10) || 0;
                     }
                 }
             }
             
             const percent = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
             const targetPercent = totalMax > 0 ? (totalTargetScore / totalMax) * 100 : 0;
+            const assessmentCompletion = totalPractices > 0 ? (totalAssessed / totalPractices) * 100 : 0;
             
-            return { totalScore, totalMax, percent, totalTargetScore, targetPercent };
+            return { totalScore, totalMax, percent, totalTargetScore, targetPercent, assessmentCompletion, totalAssessed, totalPractices };
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
         }
 
         function calculateAllScores() {
+            // ==================================
+            // === START MODIFICATION: Update scoring logic ===
+            // ==================================
             let grandTotalScore = 0;
             let grandTotalMax = 0;
             let grandTotalTargetScore = 0;
+            let grandTotalAssessed = 0;
+            let grandTotalPractices = 0;
 
             const domainScores = CMM_DATA.domains.map(domain => {
                 const scores = calculateDomainScores(domain.id);
                 grandTotalScore += scores.totalScore;
                 grandTotalMax += scores.totalMax;
                 grandTotalTargetScore += scores.totalTargetScore;
+                grandTotalAssessed += scores.totalAssessed;
+                grandTotalPractices += scores.totalPractices;
                 return { ...domain, ...scores };
             });
 
             const overallPercent = grandTotalMax > 0 ? (grandTotalScore / grandTotalMax) * 100 : 0;
             const overallTargetPercent = grandTotalMax > 0 ? (grandTotalTargetScore / grandTotalMax) * 100 : 0;
+            const overallAssessmentCompletion = grandTotalPractices > 0 ? (grandTotalAssessed / grandTotalPractices) * 100 : 0;
 
             return { 
                 domainScores, 
@@ -695,8 +777,14 @@
                 grandTotalMax, 
                 grandTotalTargetScore, 
                 overallPercent, 
-                overallTargetPercent 
+                overallTargetPercent,
+                overallAssessmentCompletion,
+                grandTotalAssessed,
+                grandTotalPractices
             };
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
         }
 
         // --- PAGE RENDERING ---
@@ -754,7 +842,17 @@
         }
 
         function renderDashboardPage() {
-            const { domainScores, grandTotalScore, grandTotalMax, grandTotalTargetScore, overallPercent, overallTargetPercent } = calculateAllScores();
+            const { 
+                domainScores, 
+                grandTotalScore, 
+                grandTotalMax, 
+                grandTotalTargetScore, 
+                overallPercent, 
+                overallTargetPercent,
+                overallAssessmentCompletion,
+                grandTotalAssessed,
+                grandTotalPractices
+            } = calculateAllScores();
             
             // 1. Populate Table
             const tableBody = document.getElementById('dashboard-table-body');
@@ -846,9 +944,15 @@
             chartInstances.doughnut = new Chart(doughnutCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Complete', 'Remaining'],
+                    // ==================================
+                    // === START MODIFICATION: Update doughnut chart ===
+                    // ==================================
+                    labels: ['Assessed', 'Not Assessed'],
                     datasets: [{
-                        data: [grandTotalScore, grandTotalMax - grandTotalScore],
+                        data: [grandTotalAssessed, grandTotalPractices - grandTotalAssessed],
+                    // ==================================
+                    // === END MODIFICATION ===
+                    // ==================================
                         backgroundColor: ['rgba(59, 130, 246, 1)', 'rgba(229, 231, 235, 1)'],
                         borderColor: ['rgba(59, 130, 246, 1)', 'rgba(229, 231, 235, 1)'],
                         borderWidth: 1
@@ -862,8 +966,14 @@
                         legend: { display: false },
                         tooltip: { enabled: false },
                         title: {
+                            // ==================================
+                            // === START MODIFICATION: Update doughnut title ===
+                            // ==================================
                             display: true,
-                            text: `${overallPercent.toFixed(1)}%`,
+                            text: `${overallAssessmentCompletion.toFixed(1)}%`,
+                            // ==================================
+                            // === END MODIFICATION ===
+                            // ==================================
                             position: 'top', // 'bottom' to put it in center
                             font: { size: 40, weight: 'bold' },
                             color: '#1e293b',
@@ -871,7 +981,13 @@
                         },
                         subtitle: {
                             display: true,
-                            text: 'Overall Completion',
+                            // ==================================
+                            // === START MODIFICATION: Update doughnut subtitle ===
+                            // ==================================
+                            text: 'Overall Assessment',
+                            // ==================================
+                            // === END MODIFICATION ===
+                            // ==================================
                             font: { size: 16 },
                             color: '#64748b',
                             padding: { bottom: 30 }
@@ -930,7 +1046,13 @@
         ];
 
         function createCurrentMaturityWidget(practice) {
-            const score = parseInt(practice.score, 10) || 0;
+            // ==================================
+            // === START MODIFICATION: Handle null score ===
+            // ==================================
+            const score = parseScore(practice.score);
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
             const widget = document.createElement('div');
             widget.className = "maturity-widget";
             widget.dataset.id = practice.id;
@@ -945,11 +1067,19 @@
                 dot.dataset.field = "score"; // Set field
                 dot.title = s.title;
 
-                if (s.value === score) {
-                    dot.classList.add('active', 'selected');
-                } else if (s.value < score) {
-                    dot.classList.add('active');
+                // ==================================
+                // === START MODIFICATION: Handle null score ===
+                // ==================================
+                if (score !== null) {
+                    if (s.value === score) {
+                        dot.classList.add('active', 'selected');
+                    } else if (s.value < score) {
+                        dot.classList.add('active');
+                    }
                 }
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
                 
                 const label = document.createElement('div');
                 label.className = "maturity-label";
@@ -962,7 +1092,13 @@
                 if (index < scoreLevels.length - 1) {
                     const line = document.createElement('div');
                     line.className = "maturity-line";
-                    if (s.value < score) {
+                    // ==================================
+                    // === START MODIFICATION: Handle null score ===
+                    // ==================================
+                    if (score !== null && s.value < score) {
+                    // ==================================
+                    // === END MODIFICATION ===
+                    // ==================================
                         line.classList.add('active');
                     }
                     widget.appendChild(line);
@@ -972,7 +1108,13 @@
         }
 
         function createTargetMaturityWidget(practice) {
-            const score = parseInt(practice.targetScore, 10) || 0;
+            // ==================================
+            // === START MODIFICATION: Handle null score ===
+            // ==================================
+            const score = parseScore(practice.targetScore);
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
             const widget = document.createElement('div');
             widget.className = "target-widget"; // Use target class
             widget.dataset.id = practice.id;
@@ -987,11 +1129,19 @@
                 dot.dataset.field = "targetScore"; // Set field
                 dot.title = `Target: ${s.title}`;
 
-                if (s.value === score) {
-                    dot.classList.add('active', 'selected');
-                } else if (s.value < score) {
-                    dot.classList.add('active');
+                // ==================================
+                // === START MODIFICATION: Handle null score ===
+                // ==================================
+                if (score !== null) {
+                    if (s.value === score) {
+                        dot.classList.add('active', 'selected');
+                    } else if (s.value < score) {
+                        dot.classList.add('active');
+                    }
                 }
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
                 
                 const label = document.createElement('div');
                 label.className = "maturity-label";
@@ -1004,7 +1154,13 @@
                 if (index < scoreLevels.length - 1) {
                     const line = document.createElement('div');
                     line.className = "target-line"; // Use target class
-                    if (s.value < score) {
+                    // ==================================
+                    // === START MODIFICATION: Handle null score ===
+                    // ==================================
+                    if (score !== null && s.value < score) {
+                    // ==================================
+                    // === END MODIFICATION ===
+                    // ==================================
                         line.classList.add('active');
                     }
                     widget.appendChild(line);
@@ -1021,7 +1177,13 @@
          * Used on the Priorities page.
          */
         function createDisplayMaturityWidget(score, type = 'current') {
-            const intScore = parseInt(score, 10) || 0;
+            // ==================================
+            // === START MODIFICATION: Handle null score ===
+            // ==================================
+            const intScore = parseScore(score);
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
             const baseClass = type === 'current' ? 'maturity' : 'target';
             const widgetClass = type === 'current' ? 'maturity-widget' : 'target-widget';
 
@@ -1030,23 +1192,37 @@
             
             scoreLevels.forEach((s, index) => {
                 const dotClasses = [`${baseClass}-dot`];
-                if (s.value === intScore) {
-                    dotClasses.push('active', 'selected');
-                } else if (s.value < intScore) {
-                    dotClasses.push('active');
+                // ==================================
+                // === START MODIFICATION: Handle null score ===
+                // ==================================
+                if (intScore !== null) {
+                    if (s.value === intScore) {
+                        dotClasses.push('active', 'selected');
+                    } else if (s.value < intScore) {
+                        dotClasses.push('active');
+                    }
                 }
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
                 
                 // Dot wrapper
                 html += `<div class="flex flex-col items-center">`;
                 // Dot
-                html += `<div class="${dotClasses.join(' ')}" title="${s.title}"></div>`; 
+                html += `<div class="${dotClasses.join(' ')}" title="${intScore === null ? 'Not Assessed' : s.title}"></div>`; 
                 // Label
                 html += `<div class="maturity-label">${s.value}</div>`;
                 html += `</div>`; // End dot wrapper
 
                 if (index < scoreLevels.length - 1) {
                     const lineClasses = [`${baseClass}-line`];
-                    if (s.value < intScore) {
+                    // ==================================
+                    // === START MODIFICATION: Handle null score ===
+                    // ==================================
+                    if (intScore !== null && s.value < intScore) {
+                    // ==================================
+                    // === END MODIFICATION ===
+                    // ==================================
                         lineClasses.push('active');
                     }
                     html += `<div class="${lineClasses.join(' ')}"></div>`;
@@ -1101,6 +1277,29 @@
                 showPage('home');
             }
         }
+        
+        // ==================================
+        // === START MODIFICATION: New sidebar progress updater ===
+        // ==================================
+        function updateSidebarProgress() {
+            CMM_DATA.domains.forEach(domain => {
+                const { assessmentCompletion } = calculateDomainScores(domain.id);
+                const percent = assessmentCompletion.toFixed(0);
+                
+                const label = document.querySelector(`[data-progress-label-domain="${domain.id}"]`);
+                const bar = document.querySelector(`[data-progress-bar-domain="${domain.id}"]`);
+                
+                if (label) {
+                    label.textContent = `${percent}%`;
+                }
+                if (bar) {
+                    bar.style.width = `${percent}%`;
+                }
+            });
+        }
+        // ==================================
+        // === END MODIFICATION ===
+        // ==================================
         // --- END NEW/MODIFIED FUNCTIONS ---
 
 function renderAssessmentPage(domainId) {
@@ -1146,8 +1345,16 @@ function renderAssessmentPage(domainId) {
                 details.appendChild(summary);
 
                 // Calculate subtotals for objective
+                // ==================================
+                // === START MODIFICATION: Update subtotal logic ===
+                // ==================================
                 let objTotalScore = 0;
                 let objTotalMax = 0;
+                let objTotalAssessed = 0;
+                let objTotalPractices = 0;
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
 
                 // Group practices by maturity
                 const practicesByMaturity = {
@@ -1158,9 +1365,19 @@ function renderAssessmentPage(domainId) {
                 
                 // This loop will work now because objective.practices is a valid array
                 objective.practices.forEach(practice => {
-                    // Add to subtotals
-                    objTotalScore += parseInt(practice.score, 10) || 0;
+                    // ==================================
+                    // === START MODIFICATION: Update subtotal logic ===
+                    // ==================================
+                    objTotalPractices++;
+                    const currentScore = parseScore(practice.score);
+                    if (currentScore !== null) {
+                        objTotalAssessed++;
+                        objTotalScore += currentScore;
+                    }
                     objTotalMax += parseInt(practice.max, 10) || 0;
+                    // ==================================
+                    // === END MODIFICATION ===
+                    // ==================================
                     
                     // Group for rendering
                     let maturityKey = practice.maturity.replace(/\s+/g, ' ').toUpperCase(); // Normalize key
@@ -1340,17 +1557,23 @@ function renderAssessmentPage(domainId) {
                 details.appendChild(maturityGroupsContainer);
 
                 // Add the subtotal element
+                // ==================================
+                // === START MODIFICATION: Update subtotal logic ===
+                // ==================================
                 const objPercent = objTotalMax > 0 ? (objTotalScore / objTotalMax) * 100 : 0;
+                const objCompletion = objTotalPractices > 0 ? (objTotalAssessed / objTotalPractices) * 100 : 0;
                 const subtotalEl = document.createElement('div');
                 subtotalEl.className = "bg-slate-50 p-4 font-bold text-sm flex justify-end space-x-6 border-t border-slate-200";
                 // Add data-attribute to find this element later
                 subtotalEl.dataset.objectiveId = objective.name;
                 subtotalEl.innerHTML = `
-                    <span>Section Subtotal:</span>
-                    <span>Score: ${objTotalScore}</span>
-                    <span>Max: ${objTotalMax}</span>
-                    <span>${objPercent.toFixed(1)}%</span>
+                    <span class="font-semibold">Section Subtotal:</span>
+                    <span class="text-right">Completed: ${objTotalAssessed} / ${objTotalPractices} (${objCompletion.toFixed(1)}%)</span>
+                    <span class="text-right">Score: ${objTotalScore} / ${objTotalMax} (${objPercent.toFixed(1)}%)</span>
                 `;
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
                 details.appendChild(subtotalEl); // Add it to the <details> block
                 
                 container.appendChild(details);
@@ -1358,7 +1581,12 @@ function renderAssessmentPage(domainId) {
         }
         
         function updateAssessmentSummary(domainId) {
-            const { totalScore, totalMax, percent } = calculateDomainScores(domainId);
+            // ==================================
+            // === START MODIFICATION: Add progress bar to assessment page ===
+            // ==================================
+            const { totalScore, totalMax, percent, assessmentCompletion } = calculateDomainScores(domainId);
+            
+            // 1. Update Score Summary
             const summaryEl = document.getElementById('assessment-summary');
             if (summaryEl) {
                 summaryEl.innerHTML = `
@@ -1366,6 +1594,36 @@ function renderAssessmentPage(domainId) {
                     <span class="font-bold ml-4">Completion:</span> ${percent.toFixed(1)}%
                 `;
             }
+
+            // 2. Create/Update Progress Bar
+            let progressEl = document.getElementById('assessment-page-progress');
+            const summaryParent = document.getElementById('assessment-summary').parentElement;
+            
+            // Create the progress element if it doesn't exist
+            if (!progressEl && summaryParent) {
+                progressEl = document.createElement('div');
+                progressEl.id = 'assessment-page-progress';
+                progressEl.className = 'w-1/4'; // Give it some width
+                // Insert it before the summary element
+                summaryParent.insertBefore(progressEl, summaryEl);
+            }
+            
+            // Populate the progress bar
+            if (progressEl) {
+                const percent = assessmentCompletion.toFixed(0);
+                progressEl.innerHTML = `
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-sm font-medium text-slate-700">Assessment Progress</span>
+                        <span class="text-sm font-medium text-slate-500">${percent}%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${percent}%"></div>
+                    </div>
+                `;
+            }
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
         }
 
         // ==================================
@@ -1383,8 +1641,17 @@ function renderAssessmentPage(domainId) {
                 
                 domain.objectives.forEach(objective => {
                     objective.practices.forEach(practice => {
-                        // Only include items that need improvement
-                        if (parseInt(practice.targetScore, 10) > parseInt(practice.score, 10)) {
+                        // ==================================
+                        // === START MODIFICATION: Update priority logic ===
+                        // ==================================
+                        const currentScore = parseScore(practice.score);
+                        const targetScore = parseScore(practice.targetScore);
+                        
+                        // Only include items where target is set and (current is null or target > current)
+                        if (targetScore !== null && (currentScore === null || targetScore > currentScore)) {
+                        // ==================================
+                        // === END MODIFICATION ===
+                        // ==================================
                             priorityItems.push({
                                 domain: domainMeta ? domainMeta.nickname : domainId,
                                 objective: objective.name, // Use the clean name
@@ -1411,15 +1678,27 @@ function renderAssessmentPage(domainId) {
                         if (valA === '-') valA = -Infinity;
                         if (valB === '-') valB = -Infinity;
                         break;
+                    // ==================================
+                    // === START MODIFICATION: Update sort logic for null ===
+                    // ==================================
                     case 'impact':
                     case 'loe':
+                        valA = parseInt(a[col], 10) || 0;
+                        valB = parseInt(b[col], 10) || 0;
+                        break;
                     case 'score':
                     case 'target':
                         // Use targetScore for 'target' column
                         const key = col === 'target' ? 'targetScore' : col;
-                        valA = parseInt(a[key], 10) || 0;
-                        valB = parseInt(b[key], 10) || 0;
+                        valA = parseScore(a[key]);
+                        valB = parseScore(b[key]);
+                        // Sort nulls (Not Assessed) before 0
+                        if (valA === null) valA = -1;
+                        if (valB === null) valB = -1;
                         break;
+                    // ==================================
+                    // === END MODIFICATION ===
+                    // ==================================
                     case 'date': // Target Date
                         valA = a.targetDate || '';
                         valB = b.targetDate || '';
@@ -1516,7 +1795,17 @@ function renderAssessmentPage(domainId) {
                 
                 domain.objectives.forEach(objective => {
                     objective.practices.forEach(practice => {
-                        if (parseInt(practice.targetScore, 10) > parseInt(practice.score, 10)) {
+                        // ==================================
+                        // === START MODIFICATION: Update priority logic ===
+                        // ==================================
+                        const currentScore = parseScore(practice.score);
+                        const targetScore = parseScore(practice.targetScore);
+                        
+                        // Only include items where target is set and (current is null or target > current)
+                        if (targetScore !== null && (currentScore === null || targetScore > currentScore)) {
+                        // ==================================
+                        // === END MODIFICATION ===
+                        // ==================================
                             priorityItems.push({
                                 domain: domainMeta ? domainMeta.nickname : domainId,
                                 objective: objective.name,
@@ -1541,14 +1830,26 @@ function renderAssessmentPage(domainId) {
                         if (valA === '-') valA = -Infinity;
                         if (valB === '-') valB = -Infinity;
                         break;
+                    // ==================================
+                    // === START MODIFICATION: Update sort logic for null ===
+                    // ==================================
                     case 'impact':
                     case 'loe':
+                        valA = parseInt(a[col], 10) || 0;
+                        valB = parseInt(b[col], 10) || 0;
+                        break;
                     case 'score':
                     case 'target':
                         const key = col === 'target' ? 'targetScore' : col;
-                        valA = parseInt(a[key], 10) || 0;
-                        valB = parseInt(b[key], 10) || 0;
+                        valA = parseScore(a[key]);
+                        valB = parseScore(b[key]);
+                        // Sort nulls (Not Assessed) before 0
+                        if (valA === null) valA = -1;
+                        if (valB === null) valB = -1;
                         break;
+                    // ==================================
+                    // === END MODIFICATION ===
+                    // ==================================
                     case 'date':
                         valA = a.targetDate || '';
                         valB = b.targetDate || '';
@@ -1585,8 +1886,15 @@ function renderAssessmentPage(domainId) {
                 const row = [
                     item.domain,
                     item.practice,
-                    item.score,
-                    item.targetScore,
+                    // ==================================
+                    // === START MODIFICATION: Handle null in CSV ===
+                    // ==================================
+                    // Use parseScore to handle null, but output empty string if null
+                    parseScore(item.score) === null ? '' : item.score,
+                    parseScore(item.targetScore) === null ? '' : item.targetScore,
+                    // ==================================
+                    // === END MODIFICATION ===
+                    // ==================================
                     item.impact || '',
                     item.loe || '',
                     priority,
@@ -1657,7 +1965,17 @@ function renderAssessmentPage(domainId) {
                 
                 // Convert numbers
                 if (field === 'score' || field === 'targetScore' || field === 'impact' || field === 'loe' || field === 'max') {
-                    value = parseInt(value, 10);
+                    // ==================================
+                    // === START MODIFICATION: Allow nulls, parse ints ===
+                    // ==================================
+                    // Don't parse 'score' or 'targetScore' here, widget click handles it.
+                    // This is for dropdowns/text inputs
+                    if (field === 'impact' || field === 'loe' || field === 'max') {
+                         value = parseInt(value, 10);
+                    }
+                    // ==================================
+                    // === END MODIFICATION ===
+                    // ==================================
                 }
                 
                 practice[field] = value;
@@ -1696,17 +2014,41 @@ function renderAssessmentPage(domainId) {
 
             const { practice, domainId, objective } = getPracticeById(practiceId);
             if (practice) {
-                practice[field] = newScore;
+                // ==================================
+                // === START MODIFICATION: Toggle null/value ===
+                // ==================================
+                // If clicking the *currently selected* dot, set to null (unset)
+                if (parseScore(practice[field]) === newScore) {
+                    practice[field] = null;
+                    updateDotWidget(widget, null); // Update UI to show "unset"
+                } else {
+                // Otherwise, set the new score
+                    practice[field] = newScore;
+                    updateDotWidget(widget, newScore); // Update UI
+                }
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
                 
                 // Save state
                 saveState();
                 
                 // Update UI
-                updateDotWidget(widget, newScore);
                 updateAssessmentSummary(activeDomain);
                 if (objective) {
                     updateObjectiveSubtotal(objective);
                 }
+                
+                // ==================================
+                // === START MODIFICATION: Update sidebar progress ===
+                // ==================================
+                // If the current score was changed, update progress
+                if (field === 'score') {
+                    updateSidebarProgress();
+                }
+                // ==================================
+                // === END MODIFICATION ===
+                // ==================================
                 
                 // If the target was changed, refresh the dashboard and priorities pages
                 if (field === 'targetScore') {
@@ -1761,11 +2103,25 @@ function renderAssessmentPage(domainId) {
 
             // Populate Domain Nav
             const domainNav = document.getElementById('domain-nav');
+            // ==================================
+            // === START MODIFICATION: Add progress bar to nav ===
+            // ==================================
             CMM_DATA.domains.forEach(domain => {
                 const li = document.createElement('li');
-                li.innerHTML = `<a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700 text-sm" data-page="assessment" data-domain="${domain.id}">${domain.nickname}</a>`;
+                li.innerHTML = `<a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700 text-sm" data-page="assessment" data-domain="${domain.id}">
+                    <div class="flex justify-between items-center">
+                        <span>${domain.nickname}</span>
+                        <span class="text-xs text-slate-400" data-progress-label-domain="${domain.id}">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-600 rounded-full h-1 mt-1">
+                        <div data-progress-bar-domain="${domain.id}" class="bg-blue-500 h-1 rounded-full" style="width: 0%"></div>
+                    </div>
+                </a>`;
                 domainNav.appendChild(li);
             });
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
 
             // Attach Global Event Listeners
             document.getElementById('main-nav').addEventListener('click', handleNavClick);
@@ -1791,6 +2147,15 @@ function renderAssessmentPage(domainId) {
 
             // Show initial page
             updateNavVisibility(); // Hide/show nav links based on mode
+            
+            // ==================================
+            // === START MODIFICATION: Update sidebar on load ===
+            // ==================================
+            updateSidebarProgress();
+            // ==================================
+            // === END MODIFICATION ===
+            // ==================================
+
             showPage('home');
             console.log('...Initialization Complete.');
         }
