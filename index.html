@@ -111,7 +111,7 @@
              padding-top: 4px; /* Align with other inputs */
         }
         .target-widget {
-            margin-top: 0.5rem; /* space between widgets */
+             padding-top: 4px;
         }
         .maturity-line, .target-line {
             width: 40px; /* Fixed width for compactness */
@@ -194,6 +194,22 @@
                 </li>
 
                 <li class="pt-8">
+                    <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Settings</h2>
+                    <div class="p-3 text-sm">
+                        <label class="flex items-center justify-between cursor-pointer">
+                        <span class="text-slate-200">Planning Mode</span>
+                        <div class="relative">
+                            <input type="checkbox" id="mode-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-600 rounded-full peer-checked:bg-blue-600"></div>
+                            <div class="absolute top-0.5 left-[2px] bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-full"></div>
+                        </div>
+                    </label>
+                    <p class="mt-2 text-xs text-slate-500">
+                        Enable to show Target, Priority, and planning fields.
+                    </p>
+                </div>
+                </li>
+                <li class="pt-8">
                     <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Data</h2>
                     <div class="p-2">
                         <button id="reset-data" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-3 rounded-md">
@@ -232,20 +248,18 @@
                         <p class="text-lg text-slate-600 mb-6">This tool is a stand-alone web application to help you self-evaluate your current maturity posture across each of the CTI-CMM domains.</p>
                         <ol class="list-decimal list-inside space-y-2">
                             <li  class="text-lg text-slate-600 mb-6"><strong>Navigate Domains:</strong> Use the sidebar to select one of the 11 CTI-CMM domains.</li>
-                            <li class="text-lg text-slate-600 mb-6"><strong>Self-Assess:</strong> For each practice, select your <strong>Current</strong> and <strong>Target</strong> Maturity (0-3) using the clickable dot widgets.
+                            <li  class="text-lg text-slate-600 mb-6"><strong>Choose Your Mode:</strong> Use the "Planning Mode" toggle in the sidebar.
                                 <ul class="list-disc list-inside">
-                                    <li><strong>0:</strong> Not Implemented</li>
-                                    <li><strong>1:</strong> Partially Implemented</li>
-                                    <li><strong>2:</strong> Largely Implemented</li>
-                                    <li><strong>3:</strong> Fully Implemented</li>
+                                    <li><strong>Benchmark Mode (Off):</strong> Assess your `Current` maturity and add `Evidence`, `Point of Contact`, and `Notes`.</li>
+                                    <li><strong>Planning Mode (On):</strong> Adds fields for `Target` maturity, `Target Date`, `Impact`, `Effort`, and `Priority`.</li>
                                 </ul>
                             </li>
-                            <li class="text-lg text-slate-600 mb-6"><strong>Add Context:</strong> Fill in the optional <strong>Impact</strong>, <strong>Effort</strong>, <strong>Evidence</strong>, <strong>Point of Contact</strong>, and <strong>Notes</strong> fields. This data is used in the "Priorities Sheet".</li>
+                            <li class="text-lg text-slate-600 mb-6"><strong>Self-Assess:</strong> For each practice, select your <strong>Current</strong> and <strong>Target</strong> Maturity (0-3) using the clickable dot widgets.</li>
                             <li class="text-lg text-slate-600 mb-6"><strong>Auto-Save:</strong> All your entries are saved to your browser's local storage automatically. You can leave and come back at any time.</li>
                             <li class="text-lg text-slate-600 mb-6"><strong>View Results:</strong>
                                 <ul class="list-disc list-inside">
                                     <li>The <strong>Dashboard</strong> shows your overall maturity and completion percentage for each domain.</li>
-                                    <li>The <strong>Priorities Sheet</strong> aggregates all your assessment items and helps you plan your improvement journey.</li>
+                                    <li>The <strong>Priorities Sheet</strong> (available in Planning Mode) aggregates all your assessment items and helps you plan your improvement journey.</li>
                                 </ul>
                             </li>
                         </ol>
@@ -396,6 +410,7 @@
         // This object holds all the objectives and practices for each domain.
         // It's also the structure that will be saved to localStorage.
         let assessmentData = {};
+        let appMode = 'benchmark'; // 'benchmark' or 'planning'
 
         // Helper to patch domain names (from request 3)
         // This patches the "name": "nan" bug from the source data
@@ -472,6 +487,7 @@
 
         // --- STATE MANAGEMENT ---
         const STORAGE_KEY = 'ctiCmmAssessmentData';
+        const MODE_STORAGE_KEY = 'ctiCmmAppMode';
 
         function saveState() {
             try {
@@ -484,7 +500,28 @@
             }
         }
 
+        function saveMode() {
+            try {
+                localStorage.setItem(MODE_STORAGE_KEY, appMode);
+                console.log('App mode saved.');
+            } catch (e) {
+                console.warn('localStorage write failed (mode):', e.message);
+                // If saving fails, we just warn the user in the console
+                // The app will continue to work, but the mode won't save
+            }
+        }
+
         function loadState() {
+            // Load app mode
+            try {
+                appMode = localStorage.getItem(MODE_STORAGE_KEY) || 'benchmark';
+            } catch (e) {
+                console.warn('localStorage read failed (mode):', e.message);
+                appMode = 'benchmark'; // Default to benchmark if storage fails
+            }
+            document.getElementById('mode-toggle').checked = (appMode === 'planning');
+            
+            // Load assessment data
             try {
                 const savedData = localStorage.getItem(STORAGE_KEY);
                 const defaultData = getDefaultAssessmentData();
@@ -559,7 +596,6 @@
             }
         }
 
-        // --- START NEW FUNCTION ---
         function calculatePriority(impact, loe) {
             const impactVal = parseInt(impact, 10);
             const loeVal = parseInt(loe, 10);
@@ -569,18 +605,9 @@
                 return "-"; // Use a dash for unset
             }
             
-            let loeScore = 0;
-            if (loeVal === 1) loeScore = 3; // Low LOE = 3 points
-            else if (loeVal === 2) loeScore = 2; // Med LOE = 2 points
-            else if (loeVal === 3) loeScore = 1; // High LOE = 1 point
-            
-            // Formula: Impact + (4 - LOE) which is what the IF logic simplifies to
-            // L7=1 -> 3 pts. 4-1=3.
-            // L7=2 -> 2 pts. 4-2=2.
-            // L7=3 -> 1 pt.  4-3=1.
+            // Formula: Impact + (4 - LOE)
             return impactVal + (4 - loeVal);
         }
-        // --- END NEW FUNCTION ---
         
         // Helper function: Update objective subtotal
         function updateObjectiveSubtotal(objective) {
@@ -868,12 +895,11 @@
         
         function createTextarea(value, practiceId, field, placeholder = '') {
             const textarea = document.createElement('textarea');
-            textarea.className = "p-1 border rounded-md w-full";
-            textarea.rows = 2;
             textarea.value = value;
             textarea.dataset.id = practiceId;
             textarea.dataset.field = field;
             textarea.placeholder = placeholder;
+            // Class and rows set in renderAssessmentPage
             return textarea;
         }
 
@@ -995,6 +1021,22 @@
             });
         }
         
+        function updateNavVisibility() {
+            // Select the <a> tag first
+            const planningNavLinks = document.querySelectorAll('a[data-page="priorities"]');
+
+            // Loop over the <a> tags and hide/show their parent <LI> element
+            planningNavLinks.forEach(link => {
+                if (link.parentElement) { // Safety check
+                    link.parentElement.style.display = (appMode === 'planning') ? 'block' : 'none';
+                }
+            });
+
+            // If we're hiding the priorities page and we are *on* it, go home.
+            if (appMode === 'benchmark' && activePage === 'priorities') {
+                showPage('home');
+            }
+        }
         // --- END NEW/MODIFIED FUNCTIONS ---
 
 function renderAssessmentPage(domainId) {
@@ -1103,14 +1145,14 @@ function renderAssessmentPage(domainId) {
                     tbody.className = "bg-white"; // Removed divide-y
 
                     practices.forEach(practice => {
-                        // --- START MODIFICATION ---
+                        // --- START MODIFICATION: Two-mode, two-row widget layout ---
                         
                         // Row 1: Practice Info (Slug + Text)
                         const rowInfo = document.createElement('tr');
                         rowInfo.className = "bg-slate-50"; // Add light background
                         
                         const cellInfo = document.createElement('td');
-                        cellInfo.colSpan = 8; // 8 columns
+                        cellInfo.colSpan = 5; // 5 columns
                         // Add padding, remove bottom border
                         cellInfo.className = "pt-4 pb-2 px-4 border-b-0"; 
                         cellInfo.innerHTML = `
@@ -1120,76 +1162,108 @@ function renderAssessmentPage(domainId) {
                         rowInfo.appendChild(cellInfo);
                         tbody.appendChild(rowInfo);
 
-                        // Row 2: Widgets
-                        const rowWidgets = document.createElement('tr');
-                        // Removed hover effect
+                        // Row 2: Top Widgets (Benchmark + Planning)
+                        const rowWidgets1 = document.createElement('tr');
                         
-                        // Define a standard top padding for aligned widgets
-                        // This aligns with the top of the *second* widget (Target)
-                        const alignedWidgetPadding = "pt-[3.25rem]"; // Approx 52px.
+                        // Col 1: Current Maturity
+                        const cellCurrent = document.createElement('td');
+                        cellCurrent.className = "pb-2 pl-4 w-[180px]";
+                        cellCurrent.innerHTML = `<div class="widget-label" title="Your current score">Current</div>`;
+                        cellCurrent.appendChild(createCurrentMaturityWidget(practice));
+                        rowWidgets1.appendChild(cellCurrent);
 
-                        // Col 1: Maturity (Stacked Widgets)
-                        const cellMaturity = document.createElement('td');
-                        cellMaturity.className = "pb-4 pl-4 w-[180px]";
-                        cellMaturity.innerHTML = `<div class="widget-label" title="Blue: Current Score, Green: Target Score">Maturity (Current/Target)</div>`;
-                        cellMaturity.appendChild(createCurrentMaturityWidget(practice));
-                        cellMaturity.appendChild(createTargetMaturityWidget(practice)); // Stacked
-                        rowWidgets.appendChild(cellMaturity);
-
-                        // Col 2: Target Date
-                        const cellDate = document.createElement('td');
-                        cellDate.className = `pb-4 w-[120px] ${alignedWidgetPadding}`; // Apply alignment padding
-                        cellDate.innerHTML = `<div class="widget-label">Target Date</div>`;
-                        cellDate.appendChild(createInput('date', practice.targetDate, practice.id, 'targetDate'));
-                        rowWidgets.appendChild(cellDate);
-                        
-                        // Col 3: Evidence
+                        // Col 2: Evidence
                         const cellEvidence = document.createElement('td');
-                        cellEvidence.className = `pb-4 w-[14%] ${alignedWidgetPadding}`; // Apply alignment padding
+                        cellEvidence.className = "pb-2 w-[20%]";
                         cellEvidence.innerHTML = `<div class="widget-label">Evidence</div>`;
                         cellEvidence.appendChild(createInput('text', practice.evidence, practice.id, 'evidence', 'Link/doc...'));
-                        rowWidgets.appendChild(cellEvidence);
+                        rowWidgets1.appendChild(cellEvidence);
                         
-                        // Col 4: POC
-                        const cellPoc = document.createElement('td');
-                        cellPoc.className = `pb-4 w-[14%] ${alignedWidgetPadding}`; // Apply alignment padding
-                        cellPoc.innerHTML = `<div class="widget-label" title="Point of Contact - the primary person, department, or owners of the evidence.">Point of Contact</div>`;
-                        cellPoc.appendChild(createInput('text', practice.poc, practice.id, 'poc', 'Name/team...'));
-                        rowWidgets.appendChild(cellPoc);
-                        
-                        // Col 5: Impact
-                        const cellImpact = document.createElement('td');
-                        cellImpact.className = `pb-4 w-[90px] ${alignedWidgetPadding}`; // Apply alignment padding
-                        cellImpact.innerHTML = `<div class="widget-label" title="What will this measure mean for business gains, threat identification and prevention, mean time to contain incidents, business resiliency?">Impact</div>`;
-                        cellImpact.appendChild(createSelect(impactOptions, practice.impact, practice.id, 'impact'));
-                        rowWidgets.appendChild(cellImpact);
-                        
-                        // Col 6: Effort
-                        const cellLoe = document.createElement('td');
-                        cellLoe.className = `pb-4 w-[90px] ${alignedWidgetPadding}`; // Apply alignment padding
-                        cellLoe.innerHTML = `<div class="widget-label" title="Represents level of effort required to achieve the Target Score maturity level.">Effort</div>`;
-                        cellLoe.appendChild(createSelect(impactOptions, practice.loe, practice.id, 'loe'));
-                        rowWidgets.appendChild(cellLoe);
+                        if (appMode === 'planning') {
+                            // --- PLANNING MODE (Row 1) ---
+                            
+                            // Col 3: Point of Contact (Moved from Row 2)
+                            const cellPoc = document.createElement('td');
+                            cellPoc.className = "pb-2 w-[20%]"; // Use pb-2 for top row
+                            cellPoc.innerHTML = `<div class="widget-label" title="Point of Contact...">Point of Contact</div>`;
+                            cellPoc.appendChild(createInput('text', practice.poc, practice.id, 'poc', 'Name/team...'));
+                            rowWidgets1.appendChild(cellPoc);
+                            
+                            // Col 4: Blank Cell (above Effort)
+                            const cellBlank = document.createElement('td');
+                            cellBlank.className = "pb-2 w-[120px]";
+                            cellBlank.innerHTML = `<div class="widget-label">&nbsp;</div>`; // Empty label
+                            rowWidgets1.appendChild(cellBlank);
 
-                        // Col 7: Priority (NEW)
-                        const cellPriority = document.createElement('td');
-                        cellPriority.className = `pb-4 w-[90px] ${alignedWidgetPadding}`; // Apply alignment padding
-                        cellPriority.innerHTML = `<div class="widget-label">Priority</div>`;
-                        const priorityDisplay = document.createElement('div');
-                        priorityDisplay.className = "p-1 font-bold text-slate-700 text-lg text-center"; // Make it stand out
-                        priorityDisplay.dataset.priorityId = practice.id;
-                        priorityDisplay.textContent = calculatePriority(practice.impact, practice.loe);
-                        cellPriority.appendChild(priorityDisplay);
-                        rowWidgets.appendChild(cellPriority);
-                        
-                        // Col 8: Notes
+                        } else {
+                            // --- BENCHMARK MODE ---
+                            // Col 3: Point of Contact (Benchmark Mode)
+                            const cellPoc = document.createElement('td');
+                            cellPoc.className = "pb-2 w-[20%]";
+                            cellPoc.colSpan = 2; // Span over Impact/Priority columns
+                            cellPoc.innerHTML = `<div class="widget-label" title="Point of Contact...">Point of Contact</div>`;
+                            cellPoc.appendChild(createInput('text', practice.poc, practice.id, 'poc', 'Name/team...'));
+                            rowWidgets1.appendChild(cellPoc);
+                        }
+
+                        // Col 5: Notes
                         const cellNotes = document.createElement('td');
-                        cellNotes.className = `pb-4 pr-4 ${alignedWidgetPadding}`; // Apply alignment padding
+                        cellNotes.className = "pb-2 pr-4 w-auto h-full"; 
+                        cellNotes.rowSpan = 1; // ALWAYS span 1 row
                         cellNotes.innerHTML = `<div class="widget-label">Notes</div>`;
-                        cellNotes.appendChild(createTextarea(practice.notes, practice.id, 'notes', 'Reasoning...'));
-                        rowWidgets.appendChild(cellNotes);
+                        const notesTextarea = createTextarea(practice.notes, practice.id, 'notes', 'Reasoning...');
+                        notesTextarea.rows = 2; // ALWAYS 2 rows
+                        notesTextarea.className = "p-1 border rounded-md w-full h-full min-h-[4rem]";
+                        cellNotes.appendChild(notesTextarea);
+                        rowWidgets1.appendChild(cellNotes);
 
-                        tbody.appendChild(rowWidgets);
+                        tbody.appendChild(rowWidgets1);
+
+                        // Row 3: Bottom Widgets (Planning ONLY)
+                        if (appMode === 'planning') {
+                            const rowWidgets2 = document.createElement('tr');
+
+                            // Col 1: Target Maturity
+                            const cellTarget = document.createElement('td');
+                            cellTarget.className = "pb-4 pl-4 w-[180px]";
+                            cellTarget.innerHTML = `<div class="widget-label" title="Your target score">Target</div>`;
+                            cellTarget.appendChild(createTargetMaturityWidget(practice));
+                            rowWidgets2.appendChild(cellTarget);
+
+                            // Col 2: Target Date
+                            const cellTargetDate = document.createElement('td');
+                            cellTargetDate.className = "pb-4 w-[20%]";
+                            cellTargetDate.innerHTML = `<div class="widget-label">Target Date</div>`;
+                            cellTargetDate.appendChild(createInput('date', practice.targetDate, practice.id, 'targetDate'));
+                            rowWidgets2.appendChild(cellTargetDate);
+
+                            // Col 3: Impact (Moved from Row 1)
+                            const cellImpact = document.createElement('td');
+                            cellImpact.className = "pb-4 w-[20%]"; // Use pb-4 for bottom row
+                            cellImpact.innerHTML = `<div class="widget-label" title="What will this measure mean for business gains..._">Impact</div>`;
+                            cellImpact.appendChild(createSelect(impactOptions, practice.impact, practice.id, 'impact'));
+                            rowWidgets2.appendChild(cellImpact);
+                            
+                            // Col 4: Effort
+                            const cellLoe = document.createElement('td');
+                            cellLoe.className = "pb-4 w-[120px]";
+                            cellLoe.innerHTML = `<div class="widget-label" title="Represents level of effort required...">Effort</div>`;
+                            cellLoe.appendChild(createSelect(impactOptions, practice.loe, practice.id, 'loe'));
+                            rowWidgets2.appendChild(cellLoe);
+
+                            // Col 5: Priority (Moved from Row 1)
+                            const cellPriority = document.createElement('td');
+                            cellPriority.className = "pb-4 pr-4 w-auto"; // Match notes column padding
+                            cellPriority.innerHTML = `<div class="widget-label">Priority</div>`;
+                            const priorityDisplay = document.createElement('div');
+                            priorityDisplay.className = "p-1 font-bold text-slate-700 text-lg text-left";
+                            priorityDisplay.dataset.priorityId = practice.id;
+                            priorityDisplay.textContent = calculatePriority(practice.impact, practice.loe);
+                            cellPriority.appendChild(priorityDisplay);
+                            rowWidgets2.appendChild(cellPriority);
+                            
+                            tbody.appendChild(rowWidgets2);
+                        }
                         
                         // --- END MODIFICATION ---
                      });
@@ -1261,7 +1335,6 @@ function renderAssessmentPage(domainId) {
                 return parseInt(item.impact, 10) >= minImpact && parseInt(item.loe, 10) <= maxLoe;
             });
             
-            // --- START MODIFICATION ---
             // Sort items: Use new calculatePriority function
             filteredItems.sort((a, b) => {
                 const scoreA = calculatePriority(a.impact, a.loe);
@@ -1271,7 +1344,6 @@ function renderAssessmentPage(domainId) {
                 if (scoreB === '-') return -1;
                 return scoreB - scoreA; // Sort descending
             });
-            // --- END MODIFICATION ---
 
             if (filteredItems.length === 0) {
                 tableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-500">No priority items match your criteria. Try adjusting your Target Scores or filters.</td></tr>`;
@@ -1298,13 +1370,18 @@ function renderAssessmentPage(domainId) {
 
         // --- EVENT HANDLERS ---
         function handleNavClick(e) {
-            e.preventDefault();
             const target = e.target.closest('.nav-link');
+
+            // Only prevent default IF we clicked a nav link
             if (target) {
+                e.preventDefault(); 
                 const pageId = target.dataset.page;
                 const domainId = target.dataset.domain;
                 showPage(pageId, domainId);
             }
+            // If the target isn't a .nav-link (like our checkbox),
+            // this function will do nothing and allow the default
+            // click behavior to proceed.
         }
         
         function handleAssessmentChange(e) {
@@ -1336,7 +1413,6 @@ function renderAssessmentPage(domainId) {
                 
                 practice[field] = value;
 
-                // --- START MODIFICATION ---
                 // Recalculate priority if impact or loe changed
                 if (field === 'impact' || field === 'loe') {
                     const priorityDisplay = document.querySelector(`[data-priority-id="${practice.id}"]`);
@@ -1344,7 +1420,6 @@ function renderAssessmentPage(domainId) {
                         priorityDisplay.textContent = calculatePriority(practice.impact, practice.loe);
                     }
                 }
-                // --- END MODIFICATION ---
                 
                 // Save state and update summary
                 saveState();
@@ -1399,11 +1474,20 @@ function renderAssessmentPage(domainId) {
                 details.open = (action === 'expand-all');
             });
         }
+        
+        function handleModeToggle(e) {
+            console.log('Mode toggle changed:', e.target.checked);
+            appMode = e.target.checked ? 'planning' : 'benchmark';
+            saveMode();
+            updateNavVisibility();
+
+            showPage(activePage, activeDomain);
+        }
 
         // --- INITIALIZATION ---
         function initializeApp() {
             console.log('CTI-CMM Tool Initializing...');
-            loadState(); // This now correctly builds the data
+            loadState(); // This now loads mode and data
 
             // Populate Domain Nav
             const domainNav = document.getElementById('domain-nav');
@@ -1416,6 +1500,7 @@ function renderAssessmentPage(domainId) {
             // Attach Global Event Listeners
             document.getElementById('main-nav').addEventListener('click', handleNavClick);
             document.getElementById('reset-data').addEventListener('click', resetData);
+            document.getElementById('mode-toggle').addEventListener('change', handleModeToggle); // Add listener for toggle
             
             // Assessment page listeners
             const assessmentPage = document.getElementById('page-assessment');
@@ -1430,6 +1515,7 @@ function renderAssessmentPage(domainId) {
             document.getElementById('priority-threshold-loe').addEventListener('change', renderPrioritiesPage);
 
             // Show initial page
+            updateNavVisibility(); // Hide/show nav links based on mode
             showPage('home');
             console.log('...Initialization Complete.');
         }
