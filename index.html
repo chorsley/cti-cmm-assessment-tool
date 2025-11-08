@@ -89,17 +89,17 @@
             font-size: 0.75rem; /* text-xs */
         }
         
-        .assessment-table .col-practice { width: 30%; }
+        /* Column widths adjusted for new layout */
         .assessment-table .col-score { width: 70px; }
         .assessment-table .col-max { width: 50px; }
         .assessment-table .col-status { width: 120px; }
-        .assessment-table .col-evidence { width: 12%; }
-        .assessment-table .col-poc { width: 12%; }
+        .assessment-table .col-evidence { width: 13%; }
+        .assessment-table .col-poc { width: 13%; }
         .assessment-table .col-target-score { width: 70px; }
         .assessment-table .col-impact { width: 90px; }
         .assessment-table .col-loe { width: 90px; }
         .assessment-table .col-target-date { width: 110px; }
-        .assessment-table .col-notes { width: 18%; }
+        .assessment-table .col-notes { width: 20%; }
 
     </style>
 </head>
@@ -927,7 +927,6 @@ function renderAssessmentPage(domainId) {
                     table.innerHTML = `
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class"col-practice">Practice</th>
                                 <th class="col-score">Score</th>
                                 <th class="col-max">Max</th>
                                 <th class="col-status">Status</th>
@@ -944,70 +943,93 @@ function renderAssessmentPage(domainId) {
                     // --- END OF MODIFIED SECTION ---
                     
                     const tbody = document.createElement('tbody');
-                    tbody.className = "bg-white divide-y divide-slate-200";
+                    tbody.className = "bg-white"; // Removed divide-y
 
                     practices.forEach(practice => {
-                        const row = document.createElement('tr');
-                        row.className = "hover:bg-slate-50";
+                        // --- START MODIFICATION ---
+                        
+                        // Row 1: Practice Info (Slug + Text)
+                        const rowInfo = document.createElement('tr');
+                        
+                        const cellInfo = document.createElement('td');
+                        cellInfo.colSpan = 10; // 10 columns now
+                        // Add padding, remove bottom border
+                        cellInfo.className = "pt-4 pb-2 px-4 border-b-0"; 
+                        cellInfo.innerHTML = `
+                            <div class="font-semibold text-slate-800">${practice.slug}</div>
+                            <div class="text-slate-600 mt-1">${practice.text}</div>
+                        `;
+                        rowInfo.appendChild(cellInfo);
+                        tbody.appendChild(rowInfo);
 
-                        // Practice Text
-                        const cellText = document.createElement('td');
-                        cellText.textContent = practice.text;
-                        row.appendChild(cellText);
+                        // Row 2: Widgets
+                        const rowWidgets = document.createElement('tr');
+                        rowWidgets.className = "hover:bg-slate-50"; // This row gets the hover and default bottom border
 
-                        // Score
+                        // Score (Now first)
                         const cellScore = document.createElement('td');
+                        cellScore.className = "pb-4 pl-4"; // Add left/bottom padding
                         cellScore.appendChild(createSelect(scoreOptions, practice.score, practice.id, 'score'));
-                        row.appendChild(cellScore);
+                        rowWidgets.appendChild(cellScore);
 
                         // Max
                         const cellMax = document.createElement('td');
+                        cellMax.className = "pb-4"; // Add padding
                         cellMax.textContent = practice.max;
-                        row.appendChild(cellMax);
+                        rowWidgets.appendChild(cellMax);
                         
                         // Status
                         const cellStatus = document.createElement('td');
-                        cellStatus.className = "font-medium";
+                        cellStatus.className = "font-medium pb-4"; // Add padding
                         cellStatus.dataset.statusId = practice.id;
                         updateStatusCell(cellStatus, practice); // Use helper
-                        row.appendChild(cellStatus);
+                        rowWidgets.appendChild(cellStatus);
                         
                         // Evidence
                         const cellEvidence = document.createElement('td');
+                        cellEvidence.className = "pb-4"; // Add padding
                         cellEvidence.appendChild(createInput('text', practice.evidence, practice.id, 'evidence', 'Link/doc...'));
-                        row.appendChild(cellEvidence);
+                        rowWidgets.appendChild(cellEvidence);
                         
                         // POC
                         const cellPoc = document.createElement('td');
+                        cellPoc.className = "pb-4"; // Add padding
                         cellPoc.appendChild(createInput('text', practice.poc, practice.id, 'poc', 'Name/team...'));
-                        row.appendChild(cellPoc);
+                        rowWidgets.appendChild(cellPoc);
                         
                         // Target Score
                         const cellTarget = document.createElement('td');
+                        cellTarget.className = "pb-4"; // Add padding
                         cellTarget.appendChild(createSelect(scoreOptions, practice.targetScore, practice.id, 'targetScore'));
-                        row.appendChild(cellTarget);
+                        rowWidgets.appendChild(cellTarget);
                         
                         // Impact
                         const cellImpact = document.createElement('td');
+                        cellImpact.className = "pb-4"; // Add padding
                         cellImpact.appendChild(createSelect(impactOptions, practice.impact, practice.id, 'impact'));
-                        row.appendChild(cellImpact);
+                        rowWidgets.appendChild(cellImpact);
                         
                         // LOE
                         const cellLoe = document.createElement('td');
+                        cellLoe.className = "pb-4"; // Add padding
                         cellLoe.appendChild(createSelect(impactOptions, practice.loe, practice.id, 'loe'));
-                        row.appendChild(cellLoe);
+                        rowWidgets.appendChild(cellLoe);
                         
                         // Target Date
                         const cellDate = document.createElement('td');
+                        cellDate.className = "pb-4"; // Add padding
                         cellDate.appendChild(createInput('date', practice.targetDate, practice.id, 'targetDate'));
-                        row.appendChild(cellDate);
+                        rowWidgets.appendChild(cellDate);
                         
                         // Notes
                         const cellNotes = document.createElement('td');
+                        cellNotes.className = "pb-4 pr-4"; // Add right/bottom padding
                         cellNotes.appendChild(createTextarea(practice.notes, practice.id, 'notes', 'Reasoning...'));
-                        row.appendChild(cellNotes);
+                        rowWidgets.appendChild(cellNotes);
 
-                        tbody.appendChild(row);
+                        tbody.appendChild(rowWidgets);
+                        
+                        // --- END MODIFICATION ---
                      });
                     
                     table.appendChild(tbody);
