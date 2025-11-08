@@ -79,6 +79,7 @@
             border-color: #e5e7eb; /* slate-200 */
         }
         
+        /* Header style (still used by Dashboard/Priorities) */
         .assessment-table th {
             background-color: #f8fafc; /* slate-50 */
             text-align: left;
@@ -89,14 +90,16 @@
             font-size: 0.75rem; /* text-xs */
         }
         
-        /* Column widths adjusted for new layout */
-        .assessment-table .col-maturity { width: 180px; } /* Renamed from col-current */
-        .assessment-table .col-evidence { width: 14%; }
-        .assessment-table .col-poc { width: 14%; }
-        .assessment-table .col-impact { width: 90px; }
-        .assessment-table .col-loe { width: 90px; }
-        .assessment-table .col-target-date { width: 110px; }
-        .assessment-table .col-notes { width: auto; } /* Let it fill */
+        /* Widget Label Style */
+        .widget-label {
+            font-size: 0.65rem; /* 10px */
+            font-weight: 500; /* medium */
+            color: #475569; /* slate-600 */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding-bottom: 0.25rem; /* pb-1 */
+            padding-left: 0.25rem; /* pl-1 */
+        }
 
         /* --- Maturity Widgets Base --- */
         .maturity-widget, .target-widget {
@@ -237,7 +240,7 @@
                                     <li><strong>3:</strong> Fully Implemented</li>
                                 </ul>
                             </li>
-                            <li class="text-lg text-slate-600 mb-6"><strong>Add Context:</strong> Fill in the optional <strong>Impact</strong>, <strong>LOE</strong>, <strong>Evidence</strong>, <strong>POC</strong>, and <strong>Notes</strong> fields. This data is used in the "Priorities Sheet".</li>
+                            <li class="text-lg text-slate-600 mb-6"><strong>Add Context:</strong> Fill in the optional <strong>Impact</strong>, <strong>Effort</strong>, <strong>Evidence</strong>, <strong>Point of Contact</strong>, and <strong>Notes</strong> fields. This data is used in the "Priorities Sheet".</li>
                             <li class="text-lg text-slate-600 mb-6"><strong>Auto-Save:</strong> All your entries are saved to your browser's local storage automatically. You can leave and come back at any time.</li>
                             <li class="text-lg text-slate-600 mb-6"><strong>View Results:</strong>
                                 <ul class="list-disc list-inside">
@@ -339,7 +342,7 @@
 
                 <div class="bg-white p-6 rounded-lg shadow-md mb-6">
                     <h3 class="text-xl font-semibold mb-4">What is this?</h3>
-                    <p class="text-slate-600">This planning sheet aggregates all practices where your <strong>Target Score</strong> is greater than your current <strong>Score</strong>. It helps you prioritize items based on their perceived Level of Effort (LOE) and Impact.</p>
+                    <p class="text-slate-600">This planning sheet aggregates all practices where your <strong>Target Score</strong> is greater than your current <strong>Score</strong>. It helps you prioritize items based on their perceived <strong>Effort</strong> and <strong>Impact</strong>.</p>
                     
                     <div class="mt-4 flex items-center space-x-4">
                         <label for="priority-threshold-impact" class="font-medium">Filter by Min Impact:</label>
@@ -348,7 +351,7 @@
                             <option value="2">2 (Med)</option>
                             <option value="3">3 (High)</option>
                         </select>
-                        <label for="priority-threshold-loe" class="font-medium">Filter by Max LOE:</label>
+                        <label for="priority-threshold-loe" class="font-medium">Filter by Max Effort:</label>
                         <select id="priority-threshold-loe" class="p-2 border rounded-md">
                             <option value="3">3 (High)</option>
                             <option value="2">2 (Med)</option>
@@ -369,7 +372,7 @@
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Score</th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target</th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Impact</th>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">LOE</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Effort</th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target Date</th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Notes</th>
                                 </tr>
@@ -555,6 +558,29 @@
                 default: return "N/A";
             }
         }
+
+        // --- START NEW FUNCTION ---
+        function calculatePriority(impact, loe) {
+            const impactVal = parseInt(impact, 10);
+            const loeVal = parseInt(loe, 10);
+
+            // Our dropdowns default to 1
+            if (!impactVal || !loeVal || impactVal < 1 || loeVal < 1) {
+                return "-"; // Use a dash for unset
+            }
+            
+            let loeScore = 0;
+            if (loeVal === 1) loeScore = 3; // Low LOE = 3 points
+            else if (loeVal === 2) loeScore = 2; // Med LOE = 2 points
+            else if (loeVal === 3) loeScore = 1; // High LOE = 1 point
+            
+            // Formula: Impact + (4 - LOE) which is what the IF logic simplifies to
+            // L7=1 -> 3 pts. 4-1=3.
+            // L7=2 -> 2 pts. 4-2=2.
+            // L7=3 -> 1 pt.  4-3=1.
+            return impactVal + (4 - loeVal);
+        }
+        // --- END NEW FUNCTION ---
         
         // Helper function: Update objective subtotal
         function updateObjectiveSubtotal(objective) {
@@ -1071,21 +1097,7 @@ function renderAssessmentPage(domainId) {
                     const table = document.createElement('table');
                     table.className = "min-w-full assessment-table";
                     
-                    // --- THIS IS THE MODIFIED SECTION ---
-                    table.innerHTML = `
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th class="col-maturity" title="Blue: Current Score, Green: Target Score">Maturity (Current/Target)</th>
-                                <th class"col-evidence" title="Supporting documentation locations">Evidence</th>
-                                <th class="col-poc" title="Point of Contact - the primary person, department, or owners of the evidence.">POC</th>
-                                <th class="col-impact" title="What will this measure mean for business gains, threat identification and prevention, mean time to contain incidents, business resiliency?">Impact</th>
-                                <th class="col-loe" title="Represents level of effort required to achieve the Target Score maturity level.">LOE</th>
-                                <th class="col-target-date" title="When the target score should be achieved.">Target Date</th>
-                                <th class="col-notes" title="Any reasoning or considerations when you assigned these scores.">Notes</th>
-                            </tr>
-                        </thead>
-                    `;
-                    // --- END OF MODIFIED SECTION ---
+                    // Removed the <thead> entirely
                     
                     const tbody = document.createElement('tbody');
                     tbody.className = "bg-white"; // Removed divide-y
@@ -1095,9 +1107,10 @@ function renderAssessmentPage(domainId) {
                         
                         // Row 1: Practice Info (Slug + Text)
                         const rowInfo = document.createElement('tr');
+                        rowInfo.className = "bg-slate-50"; // Add light background
                         
                         const cellInfo = document.createElement('td');
-                        cellInfo.colSpan = 7; // 7 columns now
+                        cellInfo.colSpan = 8; // 8 columns
                         // Add padding, remove bottom border
                         cellInfo.className = "pt-4 pb-2 px-4 border-b-0"; 
                         cellInfo.innerHTML = `
@@ -1109,48 +1122,70 @@ function renderAssessmentPage(domainId) {
 
                         // Row 2: Widgets
                         const rowWidgets = document.createElement('tr');
-                        rowWidgets.className = "hover:bg-slate-50"; // This row gets the hover and default bottom border
+                        // Removed hover effect
+                        
+                        // Define a standard top padding for aligned widgets
+                        // This aligns with the top of the *second* widget (Target)
+                        const alignedWidgetPadding = "pt-[3.25rem]"; // Approx 52px.
 
-                        // Maturity (Stacked Widgets)
+                        // Col 1: Maturity (Stacked Widgets)
                         const cellMaturity = document.createElement('td');
-                        cellMaturity.className = "pb-4 pl-4"; // Add left/bottom padding
+                        cellMaturity.className = "pb-4 pl-4 w-[180px]";
+                        cellMaturity.innerHTML = `<div class="widget-label" title="Blue: Current Score, Green: Target Score">Maturity (Current/Target)</div>`;
                         cellMaturity.appendChild(createCurrentMaturityWidget(practice));
                         cellMaturity.appendChild(createTargetMaturityWidget(practice)); // Stacked
                         rowWidgets.appendChild(cellMaturity);
-                        
-                        // Evidence
-                        const cellEvidence = document.createElement('td');
-                        cellEvidence.className = "pb-4"; // Add padding
-                        cellEvidence.appendChild(createInput('text', practice.evidence, practice.id, 'evidence', 'Link/doc...'));
-                        rowWidgets.appendChild(cellEvidence);
-                        
-                        // POC
-                        const cellPoc = document.createElement('td');
-                        cellPoc.className = "pb-4"; // Add padding
-                        cellPoc.appendChild(createInput('text', practice.poc, practice.id, 'poc', 'Name/team...'));
-                        rowWidgets.appendChild(cellPoc);
-                        
-                        // Impact
-                        const cellImpact = document.createElement('td');
-                        cellImpact.className = "pb-4"; // Add padding
-                        cellImpact.appendChild(createSelect(impactOptions, practice.impact, practice.id, 'impact'));
-                        rowWidgets.appendChild(cellImpact);
-                        
-                        // LOE
-                        const cellLoe = document.createElement('td');
-                        cellLoe.className = "pb-4"; // Add padding
-                        cellLoe.appendChild(createSelect(impactOptions, practice.loe, practice.id, 'loe'));
-                        rowWidgets.appendChild(cellLoe);
-                        
-                        // Target Date
+
+                        // Col 2: Target Date
                         const cellDate = document.createElement('td');
-                        cellDate.className = "pb-4"; // Add padding
+                        cellDate.className = `pb-4 w-[120px] ${alignedWidgetPadding}`; // Apply alignment padding
+                        cellDate.innerHTML = `<div class="widget-label">Target Date</div>`;
                         cellDate.appendChild(createInput('date', practice.targetDate, practice.id, 'targetDate'));
                         rowWidgets.appendChild(cellDate);
                         
-                        // Notes
+                        // Col 3: Evidence
+                        const cellEvidence = document.createElement('td');
+                        cellEvidence.className = `pb-4 w-[14%] ${alignedWidgetPadding}`; // Apply alignment padding
+                        cellEvidence.innerHTML = `<div class="widget-label">Evidence</div>`;
+                        cellEvidence.appendChild(createInput('text', practice.evidence, practice.id, 'evidence', 'Link/doc...'));
+                        rowWidgets.appendChild(cellEvidence);
+                        
+                        // Col 4: POC
+                        const cellPoc = document.createElement('td');
+                        cellPoc.className = `pb-4 w-[14%] ${alignedWidgetPadding}`; // Apply alignment padding
+                        cellPoc.innerHTML = `<div class="widget-label" title="Point of Contact - the primary person, department, or owners of the evidence.">Point of Contact</div>`;
+                        cellPoc.appendChild(createInput('text', practice.poc, practice.id, 'poc', 'Name/team...'));
+                        rowWidgets.appendChild(cellPoc);
+                        
+                        // Col 5: Impact
+                        const cellImpact = document.createElement('td');
+                        cellImpact.className = `pb-4 w-[90px] ${alignedWidgetPadding}`; // Apply alignment padding
+                        cellImpact.innerHTML = `<div class="widget-label" title="What will this measure mean for business gains, threat identification and prevention, mean time to contain incidents, business resiliency?">Impact</div>`;
+                        cellImpact.appendChild(createSelect(impactOptions, practice.impact, practice.id, 'impact'));
+                        rowWidgets.appendChild(cellImpact);
+                        
+                        // Col 6: Effort
+                        const cellLoe = document.createElement('td');
+                        cellLoe.className = `pb-4 w-[90px] ${alignedWidgetPadding}`; // Apply alignment padding
+                        cellLoe.innerHTML = `<div class="widget-label" title="Represents level of effort required to achieve the Target Score maturity level.">Effort</div>`;
+                        cellLoe.appendChild(createSelect(impactOptions, practice.loe, practice.id, 'loe'));
+                        rowWidgets.appendChild(cellLoe);
+
+                        // Col 7: Priority (NEW)
+                        const cellPriority = document.createElement('td');
+                        cellPriority.className = `pb-4 w-[90px] ${alignedWidgetPadding}`; // Apply alignment padding
+                        cellPriority.innerHTML = `<div class="widget-label">Priority</div>`;
+                        const priorityDisplay = document.createElement('div');
+                        priorityDisplay.className = "p-1 font-bold text-slate-700 text-lg text-center"; // Make it stand out
+                        priorityDisplay.dataset.priorityId = practice.id;
+                        priorityDisplay.textContent = calculatePriority(practice.impact, practice.loe);
+                        cellPriority.appendChild(priorityDisplay);
+                        rowWidgets.appendChild(cellPriority);
+                        
+                        // Col 8: Notes
                         const cellNotes = document.createElement('td');
-                        cellNotes.className = "pb-4 pr-4"; // Add right/bottom padding
+                        cellNotes.className = `pb-4 pr-4 ${alignedWidgetPadding}`; // Apply alignment padding
+                        cellNotes.innerHTML = `<div class="widget-label">Notes</div>`;
                         cellNotes.appendChild(createTextarea(practice.notes, practice.id, 'notes', 'Reasoning...'));
                         rowWidgets.appendChild(cellNotes);
 
@@ -1226,12 +1261,17 @@ function renderAssessmentPage(domainId) {
                 return parseInt(item.impact, 10) >= minImpact && parseInt(item.loe, 10) <= maxLoe;
             });
             
-            // Sort items: High Impact, Low LOE
+            // --- START MODIFICATION ---
+            // Sort items: Use new calculatePriority function
             filteredItems.sort((a, b) => {
-                const scoreA = parseInt(a.impact, 10) * 10 - parseInt(a.loe, 10); // High impact = good, low loe = good
-                const scoreB = parseInt(b.impact, 10) * 10 - parseInt(b.loe, 10);
-                return scoreB - scoreA;
+                const scoreA = calculatePriority(a.impact, a.loe);
+                const scoreB = calculatePriority(b.impact, b.loe);
+                // Handle non-numeric '-'
+                if (scoreA === '-') return 1;
+                if (scoreB === '-') return -1;
+                return scoreB - scoreA; // Sort descending
             });
+            // --- END MODIFICATION ---
 
             if (filteredItems.length === 0) {
                 tableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-500">No priority items match your criteria. Try adjusting your Target Scores or filters.</td></tr>`;
@@ -1295,6 +1335,16 @@ function renderAssessmentPage(domainId) {
                 }
                 
                 practice[field] = value;
+
+                // --- START MODIFICATION ---
+                // Recalculate priority if impact or loe changed
+                if (field === 'impact' || field === 'loe') {
+                    const priorityDisplay = document.querySelector(`[data-priority-id="${practice.id}"]`);
+                    if (priorityDisplay) {
+                        priorityDisplay.textContent = calculatePriority(practice.impact, practice.loe);
+                    }
+                }
+                // --- END MODIFICATION ---
                 
                 // Save state and update summary
                 saveState();
