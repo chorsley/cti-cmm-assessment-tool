@@ -90,16 +90,66 @@
         }
         
         /* Column widths adjusted for new layout */
-        .assessment-table .col-score { width: 70px; }
-        .assessment-table .col-max { width: 50px; }
-        .assessment-table .col-status { width: 120px; }
-        .assessment-table .col-evidence { width: 13%; }
-        .assessment-table .col-poc { width: 13%; }
+        .assessment-table .col-maturity { width: 180px; }
+        .assessment-table .col-evidence { width: 14%; }
+        .assessment-table .col-poc { width: 14%; }
         .assessment-table .col-target-score { width: 70px; }
         .assessment-table .col-impact { width: 90px; }
         .assessment-table .col-loe { width: 90px; }
         .assessment-table .col-target-date { width: 110px; }
-        .assessment-table .col-notes { width: 20%; }
+        .assessment-table .col-notes { width: auto; } /* Let it fill */
+
+        /* --- New Maturity Widget --- */
+        .maturity-widget {
+            display: flex;
+            align-items: flex-start; /* Aligns dots and lines */
+            padding-top: 4px; /* Align with other inputs */
+            padding-left: 2px; /* Small offset */
+        }
+        .maturity-dot {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #cbd5e1; /* slate-300 */
+            border-radius: 50%;
+            cursor: pointer;
+            background-color: #fff;
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 10; /* For tooltip */
+            flex-shrink: 0; /* Prevent dots from shrinking */
+        }
+        .maturity-line {
+            width: 40px; /* Fixed width for compactness */
+            height: 2px;
+            background-color: #cbd5e1; /* slate-300 */
+            transition: background-color 0.2s ease;
+            margin-top: 8px; /* Aligns line with center of 18px dot */
+        }
+        .maturity-dot:hover {
+            border-color: #3b82f6; /* blue-500 */
+        }
+        /* Active state: filled up to the selected one */
+        .maturity-dot.active {
+            background-color: #3b82f6; /* blue-500 */
+            border-color: #3b82f6; /* blue-500 */
+        }
+        /* Selected state: the specific one clicked */
+        .maturity-dot.selected {
+            border-color: #1d4ed8; /* blue-700 */
+            transform: scale(1.1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .maturity-line.active {
+            background-color: #3b82f6; /* blue-500 */
+        }
+        /* New Label Style */
+        .maturity-label {
+            font-size: 0.75rem; /* text-xs */
+            color: #64748b; /* slate-500 */
+            margin-top: 0.25rem; /* mt-1 */
+            width: 18px; /* Match the dot width */
+            text-align: center; /* Center the number */
+        }
 
     </style>
 </head>
@@ -161,7 +211,7 @@
                         <p class="text-lg text-slate-600 mb-6">This tool is a stand-alone web application to help you self-evaluate your current maturity posture across each of the CTI-CMM domains.</p>
                         <ol class="list-decimal list-inside space-y-2">
                             <li  class="text-lg text-slate-600 mb-6"><strong>Navigate Domains:</strong> Use the sidebar to select one of the 11 CTI-CMM domains.</li>
-                            <li class="text-lg text-slate-600 mb-6"><strong>Self-Assess:</strong> For each practice, select your current <strong>Score</strong> (0-3) and your desired <strong>Target Score</strong> (0-3).
+                            <li class="text-lg text-slate-600 mb-6"><strong>Self-Assess:</strong> For each practice, select your current <strong>Maturity</strong> (0-3) using the clickable dots.
                                 <ul class="list-disc list-inside">
                                     <li><strong>0:</strong> Not Implemented</li>
                                     <li><strong>1:</strong> Partially Implemented</li>
@@ -488,43 +538,6 @@
             }
         }
         
-        // Helper function: Update status cell background
-        function updateStatusCell(cell, practice) {
-            const score = parseInt(practice.score, 10) || 0;
-            const targetScore = parseInt(practice.targetScore, 10) || 0;
-            const max = parseInt(practice.max, 10) || 0;
-            
-            let percent = 0;
-            // Use targetScore if available, otherwise use max
-            let target = targetScore > 0 ? targetScore : max;
-            
-            if (target > 0) {
-                percent = (score / target) * 100;
-            }
-            
-            // Ensure percent doesn't exceed 100
-            percent = Math.min(percent, 100);
-
-            // Set text
-            cell.textContent = getStatusFromScore(score);
-            
-            // Set style
-            // Use a subtle color. 
-            let bgColor = '#dbeafe'; // bg-blue-100
-            let isComplete = (targetScore > 0 && score >= targetScore) || (targetScore === 0 && score === max);
-            
-            if (isComplete) {
-                 bgColor = '#dcfce7'; // bg-green-100
-            }
-
-            // If score is 0, don't show any bar
-            if (score === 0) {
-                cell.style.background = 'transparent';
-            } else {
-                cell.style.background = `linear-gradient(to right, ${bgColor} ${percent}%, transparent ${percent}%)`;
-            }
-        }
-
         // Helper function: Update objective subtotal
         function updateObjectiveSubtotal(objective) {
             // Find the subtotal element by its data attribute
@@ -820,6 +833,91 @@
             return textarea;
         }
 
+        // --- START NEW/MODIFIED FUNCTIONS ---
+
+        function createMaturityWidget(practice) {
+            const score = parseInt(practice.score, 10) || 0;
+            const widget = document.createElement('div');
+            widget.className = "maturity-widget";
+            widget.dataset.id = practice.id;
+
+            const scores = [
+                { value: 0, title: "Not Implemented" },
+                { value: 1, title: "Partially Implemented" },
+                { value: 2, title: "Largely Implemented" },
+                { value: 3, title: "Fully Implemented" }
+            ];
+
+            scores.forEach((s, index) => {
+                // 1. Create the wrapper for dot and label
+                const dotWrapper = document.createElement('div');
+                dotWrapper.className = "flex flex-col items-center";
+
+                // 2. Create the dot
+                const dot = document.createElement('div');
+                dot.className = "maturity-dot";
+                dot.dataset.score = s.value;
+                dot.title = s.title;
+
+                if (s.value === score) {
+                    dot.classList.add('active', 'selected');
+                } else if (s.value < score) {
+                    dot.classList.add('active');
+                }
+                
+                // 3. Create the label
+                const label = document.createElement('div');
+                label.className = "maturity-label"; // Use CSS class
+                label.textContent = s.value; // "0", "1", "2", "3"
+                
+                // 4. Append dot and label to wrapper
+                dotWrapper.appendChild(dot);
+                dotWrapper.appendChild(label);
+                
+                // 5. Append wrapper to widget
+                widget.appendChild(dotWrapper);
+
+                // 6. Append line (if not the last one)
+                if (index < scores.length - 1) {
+                    const line = document.createElement('div');
+                    line.className = "maturity-line";
+                    if (s.value < score) {
+                        line.classList.add('active');
+                    }
+                    widget.appendChild(line);
+                }
+            });
+            
+            return widget;
+        }
+
+        function updateMaturityWidget(widgetElement, newScore) {
+            const score = parseInt(newScore, 10);
+            const dots = widgetElement.querySelectorAll('.maturity-dot');
+            const lines = widgetElement.querySelectorAll('.maturity-line');
+
+            dots.forEach((dot, index) => {
+                dot.classList.remove('active', 'selected');
+                const dotScore = parseInt(dot.dataset.score, 10);
+
+                if (dotScore === score) {
+                    dot.classList.add('active', 'selected');
+                } else if (dotScore < score) {
+                    dot.classList.add('active');
+                }
+
+                if (index < lines.length) {
+                    const line = lines[index];
+                    line.classList.remove('active');
+                    if (dotScore < score) {
+                        line.classList.add('active');
+                    }
+                }
+            });
+        }
+        
+        // --- END NEW/MODIFIED FUNCTIONS ---
+
 function renderAssessmentPage(domainId) {
             const domain = CMM_DATA.domains.find(d => d.id === domainId);
             // This is the data built by the *fixed* getDefaultAssessmentData
@@ -927,9 +1025,7 @@ function renderAssessmentPage(domainId) {
                     table.innerHTML = `
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class="col-score">Score</th>
-                                <th class="col-max">Max</th>
-                                <th class="col-status">Status</th>
+                                <th class="col-maturity">Maturity</th>
                                 <th class"col-evidence" title="Supporting documentation locations">Evidence</th>
                                 <th class="col-poc" title="Point of Contact - the primary person, department, or owners of the evidence.">POC</th>
                                 <th class="col-target-score" title="Intended maturity level by next assessment time (e.g. in twelve months).">Target</th>
@@ -952,7 +1048,7 @@ function renderAssessmentPage(domainId) {
                         const rowInfo = document.createElement('tr');
                         
                         const cellInfo = document.createElement('td');
-                        cellInfo.colSpan = 10; // 10 columns now
+                        cellInfo.colSpan = 8; // 8 columns now
                         // Add padding, remove bottom border
                         cellInfo.className = "pt-4 pb-2 px-4 border-b-0"; 
                         cellInfo.innerHTML = `
@@ -966,24 +1062,11 @@ function renderAssessmentPage(domainId) {
                         const rowWidgets = document.createElement('tr');
                         rowWidgets.className = "hover:bg-slate-50"; // This row gets the hover and default bottom border
 
-                        // Score (Now first)
-                        const cellScore = document.createElement('td');
-                        cellScore.className = "pb-4 pl-4"; // Add left/bottom padding
-                        cellScore.appendChild(createSelect(scoreOptions, practice.score, practice.id, 'score'));
-                        rowWidgets.appendChild(cellScore);
-
-                        // Max
-                        const cellMax = document.createElement('td');
-                        cellMax.className = "pb-4"; // Add padding
-                        cellMax.textContent = practice.max;
-                        rowWidgets.appendChild(cellMax);
-                        
-                        // Status
-                        const cellStatus = document.createElement('td');
-                        cellStatus.className = "font-medium pb-4"; // Add padding
-                        cellStatus.dataset.statusId = practice.id;
-                        updateStatusCell(cellStatus, practice); // Use helper
-                        rowWidgets.appendChild(cellStatus);
+                        // Maturity (Now first)
+                        const cellMaturity = document.createElement('td');
+                        cellMaturity.className = "pb-4 pl-4"; // Add left/bottom padding
+                        cellMaturity.appendChild(createMaturityWidget(practice));
+                        rowWidgets.appendChild(cellMaturity);
                         
                         // Evidence
                         const cellEvidence = document.createElement('td');
@@ -1169,19 +1252,37 @@ function renderAssessmentPage(domainId) {
                 
                 practice[field] = value;
                 
-                // Update status if score or targetScore changed
-                if (field === 'score' || field === 'targetScore') {
-                    const statusCell = document.querySelector(`td[data-status-id="${practiceId}"]`);
-                    if (statusCell) {
-                        updateStatusCell(statusCell, practice); // Use helper
-                    }
-                }
-                
                 // Save state and update summary
                 saveState();
                 updateAssessmentSummary(activeDomain);
                 
                 // Update objective subtotal
+                if (objective) {
+                    updateObjectiveSubtotal(objective);
+                }
+            }
+        }
+        
+        function handleMaturityClick(e) {
+            const target = e.target.closest('.maturity-dot');
+            if (!target) return; // Didn't click a dot
+
+            const widget = target.closest('.maturity-widget');
+            if (!widget) return;
+
+            const practiceId = widget.dataset.id;
+            const newScore = parseInt(target.dataset.score, 10);
+
+            const { practice, domainId, objective } = getPracticeById(practiceId);
+            if (practice) {
+                practice.score = newScore;
+                
+                // Save state
+                saveState();
+                
+                // Update UI
+                updateMaturityWidget(widget, newScore);
+                updateAssessmentSummary(activeDomain);
                 if (objective) {
                     updateObjectiveSubtotal(objective);
                 }
@@ -1216,6 +1317,7 @@ function renderAssessmentPage(domainId) {
             // Assessment page listeners
             const assessmentPage = document.getElementById('page-assessment');
             assessmentPage.addEventListener('change', handleAssessmentChange);
+            assessmentPage.addEventListener('click', handleMaturityClick); // Added click listener for widget
             document.getElementById('expand-all').addEventListener('click', handleCollapseExpand);
             document.getElementById('collapse-all').addEventListener('click', handleCollapseExpand);
             
