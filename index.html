@@ -384,6 +384,11 @@
                 <div class="bg-white p-6 rounded-lg shadow-md mb-6">
                     <h3 class="text-xl font-semibold mb-4">What is this?</h3>
                     <p class="text-slate-600">This planning sheet aggregates all practices where your <strong>Target Score</strong> is greater than your current <strong>Score</strong>. Click any column header to sort the list and help you plan your improvement journey.</p>
+                    <div class="mt-4">
+                        <button id="export-csv" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md font-medium text-sm">
+                            Export to CSV
+                        </button>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
@@ -392,7 +397,6 @@
                             <thead class="bg-slate-50">
                                 <tr>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="domain">Domain <span></span></th>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="objective">Objective <span></span></th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="practice">Practice <span></span></th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="score">Score <span></span></th>
                                     <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="target">Target <span></span></th>
@@ -1009,6 +1013,53 @@
             return widget;
         }
 
+        // ==================================
+        // === START MODIFICATION: NEW HELPER FOR PRIORITIES PAGE ===
+        // ==================================
+        /**
+         * Creates a non-interactive HTML string for a display widget.
+         * Used on the Priorities page.
+         */
+        function createDisplayMaturityWidget(score, type = 'current') {
+            const intScore = parseInt(score, 10) || 0;
+            const baseClass = type === 'current' ? 'maturity' : 'target';
+            const widgetClass = type === 'current' ? 'maturity-widget' : 'target-widget';
+
+            // Override padding for tight table cell
+            let html = `<div class="${widgetClass}" style="padding-top: 0; padding-left: 8px;">`; 
+            
+            scoreLevels.forEach((s, index) => {
+                const dotClasses = [`${baseClass}-dot`];
+                if (s.value === intScore) {
+                    dotClasses.push('active', 'selected');
+                } else if (s.value < intScore) {
+                    dotClasses.push('active');
+                }
+                
+                // Dot wrapper
+                html += `<div class="flex flex-col items-center">`;
+                // Dot
+                html += `<div class="${dotClasses.join(' ')}" title="${s.title}"></div>`; 
+                // Label
+                html += `<div class="maturity-label">${s.value}</div>`;
+                html += `</div>`; // End dot wrapper
+
+                if (index < scoreLevels.length - 1) {
+                    const lineClasses = [`${baseClass}-line`];
+                    if (s.value < intScore) {
+                        lineClasses.push('active');
+                    }
+                    html += `<div class="${lineClasses.join(' ')}"></div>`;
+                }
+            });
+            
+            html += `</div>`;
+            return html;
+        }
+        // ==================================
+        // === END MODIFICATION ===
+        // ==================================
+
         function updateDotWidget(widgetElement, newScore) {
             const score = parseInt(newScore, 10);
             const dots = widgetElement.querySelectorAll('.maturity-dot, .target-dot');
@@ -1378,7 +1429,7 @@ function renderAssessmentPage(domainId) {
                         if (valA === '' && valB === '') return 0;
                         break;
                     case 'domain':
-                    case 'objective':
+                    // case 'objective': // Removed
                     case 'practice': 
                     case 'notes':
                     default:
@@ -1407,8 +1458,8 @@ function renderAssessmentPage(domainId) {
             });
 
             if (priorityItems.length === 0) {
-                // Update colspan to 10
-                tableBody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-500">No priority items found. (Ensure 'Target' score is higher than 'Current' score for items in Planning Mode).</td></tr>`;
+                // Update colspan to 9
+                tableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-500">No priority items found. (Ensure 'Target' score is higher than 'Current' score for items in Planning Mode).</td></tr>`;
                 return;
             }
 
@@ -1418,10 +1469,9 @@ function renderAssessmentPage(domainId) {
                 const row = `
                     <tr class="hover:bg-slate-50">
                         <td class="py-4 px-4 text-sm font-medium text-slate-900">${item.domain}</td>
-                        <td class="py-4 px-4 text-sm text-slate-500">${item.objective.substring(0, 50)}...</td>
                         <td class="py-4 px-4 text-sm text-slate-700">${item.practice}</td>
-                        <td class="py-4 px-4 text-sm text-slate-500">${item.score}</td>
-                        <td class="py-4 px-4 text-sm text-slate-500 font-bold text-green-600">${item.targetScore}</td>
+                        <td class="py-2 px-4 text-sm text-slate-500">${createDisplayMaturityWidget(item.score, 'current')}</td>
+                        <td class="py-2 px-4 text-sm text-slate-500">${createDisplayMaturityWidget(item.targetScore, 'target')}</td>
                         <td class="py-4 px-4 text-sm text-slate-500">${item.impact || '-'}</td>
                         <td class="py-4 px-4 text-sm text-slate-500">${item.loe || '-'}</td>
                         <td class="py-4 px-4 text-sm text-slate-500 font-bold text-center">${priority}</td>
@@ -1431,6 +1481,136 @@ function renderAssessmentPage(domainId) {
                 `;
                 tableBody.innerHTML += row;
             });
+        }
+        // ==================================
+        // === END MODIFICATION ===
+        // ==================================
+
+
+        // ==================================
+        // === START MODIFICATION: CSV EXPORT FUNCTIONS ===
+        // ==================================
+        function escapeCSV(str) {
+            if (str === null || str === undefined) {
+                return '""';
+            }
+            let result = String(str);
+            // Check if it needs quoting
+            if (result.includes('"') || result.includes(',') || result.includes('\n')) {
+                // Escape quotes by doubling them
+                result = result.replace(/"/g, '""');
+                // Wrap in quotes
+                result = `"${result}"`;
+            }
+            return result;
+        }
+
+        function exportPrioritiesToCSV() {
+            console.log('Exporting priorities to CSV...');
+            
+            // 1. Get Data (same logic as renderPrioritiesPage)
+            let priorityItems = [];
+            for (const domainId in assessmentData) {
+                const domain = assessmentData[domainId];
+                const domainMeta = CMM_DATA.domains.find(d => d.id === domainId);
+                
+                domain.objectives.forEach(objective => {
+                    objective.practices.forEach(practice => {
+                        if (parseInt(practice.targetScore, 10) > parseInt(practice.score, 10)) {
+                            priorityItems.push({
+                                domain: domainMeta ? domainMeta.nickname : domainId,
+                                objective: objective.name,
+                                practice: practice.slug,
+                                date: practice.targetDate,
+                                ...practice
+                            });
+                        }
+                    });
+                });
+            }
+
+            // 2. Sort Data (same logic as renderPrioritiesPage)
+            priorityItems.sort((a, b) => {
+                const col = prioritySort.column;
+                let valA, valB;
+                
+                switch (col) {
+                    case 'priority':
+                        valA = calculatePriority(a.impact, a.loe);
+                        valB = calculatePriority(b.impact, b.loe);
+                        if (valA === '-') valA = -Infinity;
+                        if (valB === '-') valB = -Infinity;
+                        break;
+                    case 'impact':
+                    case 'loe':
+                    case 'score':
+                    case 'target':
+                        const key = col === 'target' ? 'targetScore' : col;
+                        valA = parseInt(a[key], 10) || 0;
+                        valB = parseInt(b[key], 10) || 0;
+                        break;
+                    case 'date':
+                        valA = a.targetDate || '';
+                        valB = b.targetDate || '';
+                        if (valA === '' && valB !== '') return 1;
+                        if (valA !== '' && valB === '') return -1;
+                        if (valA === '' && valB === '') return 0;
+                        break;
+                    case 'domain':
+                    // case 'objective': // Removed
+                    case 'practice': 
+                    case 'notes':
+                    default:
+                        valA = (a[col] || '').toLowerCase();
+                        valB = (b[col] || '').toLowerCase();
+                        break;
+                }
+                let result = 0;
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    result = valA - valB;
+                } else if (typeof valA === 'string' && typeof valB === 'string') {
+                    result = valA.localeCompare(valB);
+                }
+                return prioritySort.direction === 'desc' ? result * -1 : result;
+            });
+
+            // 3. Build CSV String
+            const headers = [
+                'Domain', 'Practice', 'Score', 'Target', 'Impact', 'Effort', 'Priority', 'Target Date', 'Notes'
+            ];
+            let csvContent = headers.join(',') + '\n';
+
+            priorityItems.forEach(item => {
+                const priority = calculatePriority(item.impact, item.loe);
+                const row = [
+                    item.domain,
+                    item.practice,
+                    item.score,
+                    item.targetScore,
+                    item.impact || '',
+                    item.loe || '',
+                    priority,
+                    item.targetDate || '',
+                    item.notes || ''
+                ];
+                csvContent += row.map(escapeCSV).join(',') + '\n';
+            });
+
+            // 4. Create and trigger download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            if (link.download !== undefined) { // Check for download attribute support
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'cti-cmm-priorities.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } else {
+                alert('Your browser does not support automatic CSV downloads. Please try a different browser.');
+            }
         }
         // ==================================
         // === END MODIFICATION ===
@@ -1552,9 +1732,6 @@ function renderAssessmentPage(domainId) {
             showPage(activePage, activeDomain);
         }
 
-        // ==================================
-        // === START MODIFICATION: ADD SORT HANDLER ===
-        // ==================================
         function handlePrioritySortClick(e) {
             const target = e.target.closest('.sortable-header');
             if (!target) return;
@@ -1576,9 +1753,6 @@ function renderAssessmentPage(domainId) {
             // Re-render the page
             renderPrioritiesPage();
         }
-        // ==================================
-        // === END MODIFICATION ===
-        // ==================================
 
         // --- INITIALIZATION ---
         function initializeApp() {
@@ -1610,6 +1784,7 @@ function renderAssessmentPage(domainId) {
             // ==================================
             // Priorities page listener
             document.querySelector('#page-priorities thead').addEventListener('click', handlePrioritySortClick);
+            document.getElementById('export-csv').addEventListener('click', exportPrioritiesToCSV);
             // ==================================
             // === END MODIFICATION ===
             // ==================================
