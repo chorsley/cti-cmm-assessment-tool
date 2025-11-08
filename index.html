@@ -90,22 +90,42 @@
         }
         
         /* Column widths adjusted for new layout */
-        .assessment-table .col-maturity { width: 180px; }
+        .assessment-table .col-maturity { width: 180px; } /* Renamed from col-current */
         .assessment-table .col-evidence { width: 14%; }
         .assessment-table .col-poc { width: 14%; }
-        .assessment-table .col-target-score { width: 70px; }
         .assessment-table .col-impact { width: 90px; }
         .assessment-table .col-loe { width: 90px; }
         .assessment-table .col-target-date { width: 110px; }
         .assessment-table .col-notes { width: auto; } /* Let it fill */
 
-        /* --- New Maturity Widget --- */
-        .maturity-widget {
+        /* --- Maturity Widgets Base --- */
+        .maturity-widget, .target-widget {
             display: flex;
             align-items: flex-start; /* Aligns dots and lines */
-            padding-top: 4px; /* Align with other inputs */
             padding-left: 2px; /* Small offset */
         }
+        .maturity-widget {
+             padding-top: 4px; /* Align with other inputs */
+        }
+        .target-widget {
+            margin-top: 0.5rem; /* space between widgets */
+        }
+        .maturity-line, .target-line {
+            width: 40px; /* Fixed width for compactness */
+            height: 2px;
+            background-color: #cbd5e1; /* slate-300 */
+            transition: background-color 0.2s ease;
+            margin-top: 8px; /* Aligns line with center of 18px dot */
+        }
+        .maturity-label {
+            font-size: 0.75rem; /* text-xs */
+            color: #64748b; /* slate-500 */
+            margin-top: 0.25rem; /* mt-1 */
+            width: 18px; /* Match the dot width */
+            text-align: center; /* Center the number */
+        }
+
+        /* --- CURRENT (Blue) Widget --- */
         .maturity-dot {
             width: 18px;
             height: 18px;
@@ -115,41 +135,39 @@
             background-color: #fff;
             transition: all 0.2s ease;
             position: relative;
-            z-index: 10; /* For tooltip */
-            flex-shrink: 0; /* Prevent dots from shrinking */
+            z-index: 10;
+            flex-shrink: 0;
         }
-        .maturity-line {
-            width: 40px; /* Fixed width for compactness */
-            height: 2px;
-            background-color: #cbd5e1; /* slate-300 */
-            transition: background-color 0.2s ease;
-            margin-top: 8px; /* Aligns line with center of 18px dot */
-        }
-        .maturity-dot:hover {
-            border-color: #3b82f6; /* blue-500 */
-        }
-        /* Active state: filled up to the selected one */
-        .maturity-dot.active {
-            background-color: #3b82f6; /* blue-500 */
-            border-color: #3b82f6; /* blue-500 */
-        }
-        /* Selected state: the specific one clicked */
+        .maturity-dot:hover { border-color: #3b82f6; /* blue-500 */ }
+        .maturity-dot.active { background-color: #3b82f6; border-color: #3b82f6; }
         .maturity-dot.selected {
             border-color: #1d4ed8; /* blue-700 */
             transform: scale(1.1);
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
         }
-        .maturity-line.active {
-            background-color: #3b82f6; /* blue-500 */
+        .maturity-line.active { background-color: #3b82f6; }
+
+        /* --- TARGET (Green) Widget --- */
+        .target-dot {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #cbd5e1; /* slate-300 */
+            border-radius: 50%;
+            cursor: pointer;
+            background-color: #fff;
+            transition: all 0.2s ease;
+            position: relative;
+            z-index: 10;
+            flex-shrink: 0;
         }
-        /* New Label Style */
-        .maturity-label {
-            font-size: 0.75rem; /* text-xs */
-            color: #64748b; /* slate-500 */
-            margin-top: 0.25rem; /* mt-1 */
-            width: 18px; /* Match the dot width */
-            text-align: center; /* Center the number */
+        .target-dot:hover { border-color: #22c55e; /* green-500 */ }
+        .target-dot.active { background-color: #22c55e; border-color: #22c55e; }
+        .target-dot.selected {
+            border-color: #15803d; /* green-700 */
+            transform: scale(1.1);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
         }
+        .target-line.active { background-color: #22c55e; }
 
     </style>
 </head>
@@ -211,7 +229,7 @@
                         <p class="text-lg text-slate-600 mb-6">This tool is a stand-alone web application to help you self-evaluate your current maturity posture across each of the CTI-CMM domains.</p>
                         <ol class="list-decimal list-inside space-y-2">
                             <li  class="text-lg text-slate-600 mb-6"><strong>Navigate Domains:</strong> Use the sidebar to select one of the 11 CTI-CMM domains.</li>
-                            <li class="text-lg text-slate-600 mb-6"><strong>Self-Assess:</strong> For each practice, select your current <strong>Maturity</strong> (0-3) using the clickable dots.
+                            <li class="text-lg text-slate-600 mb-6"><strong>Self-Assess:</strong> For each practice, select your <strong>Current</strong> and <strong>Target</strong> Maturity (0-3) using the clickable dot widgets.
                                 <ul class="list-disc list-inside">
                                     <li><strong>0:</strong> Not Implemented</li>
                                     <li><strong>1:</strong> Partially Implemented</li>
@@ -835,28 +853,27 @@
 
         // --- START NEW/MODIFIED FUNCTIONS ---
 
-        function createMaturityWidget(practice) {
+        const scoreLevels = [
+            { value: 0, title: "Not Implemented" },
+            { value: 1, title: "Partially Implemented" },
+            { value: 2, title: "Largely Implemented" },
+            { value: 3, title: "Fully Implemented" }
+        ];
+
+        function createCurrentMaturityWidget(practice) {
             const score = parseInt(practice.score, 10) || 0;
             const widget = document.createElement('div');
             widget.className = "maturity-widget";
             widget.dataset.id = practice.id;
 
-            const scores = [
-                { value: 0, title: "Not Implemented" },
-                { value: 1, title: "Partially Implemented" },
-                { value: 2, title: "Largely Implemented" },
-                { value: 3, title: "Fully Implemented" }
-            ];
-
-            scores.forEach((s, index) => {
-                // 1. Create the wrapper for dot and label
+            scoreLevels.forEach((s, index) => {
                 const dotWrapper = document.createElement('div');
                 dotWrapper.className = "flex flex-col items-center";
-
-                // 2. Create the dot
+                
                 const dot = document.createElement('div');
                 dot.className = "maturity-dot";
                 dot.dataset.score = s.value;
+                dot.dataset.field = "score"; // Set field
                 dot.title = s.title;
 
                 if (s.value === score) {
@@ -865,20 +882,15 @@
                     dot.classList.add('active');
                 }
                 
-                // 3. Create the label
                 const label = document.createElement('div');
-                label.className = "maturity-label"; // Use CSS class
-                label.textContent = s.value; // "0", "1", "2", "3"
+                label.className = "maturity-label";
+                label.textContent = s.value;
                 
-                // 4. Append dot and label to wrapper
                 dotWrapper.appendChild(dot);
                 dotWrapper.appendChild(label);
-                
-                // 5. Append wrapper to widget
                 widget.appendChild(dotWrapper);
 
-                // 6. Append line (if not the last one)
-                if (index < scores.length - 1) {
+                if (index < scoreLevels.length - 1) {
                     const line = document.createElement('div');
                     line.className = "maturity-line";
                     if (s.value < score) {
@@ -887,14 +899,55 @@
                     widget.appendChild(line);
                 }
             });
-            
             return widget;
         }
 
-        function updateMaturityWidget(widgetElement, newScore) {
+        function createTargetMaturityWidget(practice) {
+            const score = parseInt(practice.targetScore, 10) || 0;
+            const widget = document.createElement('div');
+            widget.className = "target-widget"; // Use target class
+            widget.dataset.id = practice.id;
+
+            scoreLevels.forEach((s, index) => {
+                const dotWrapper = document.createElement('div');
+                dotWrapper.className = "flex flex-col items-center";
+                
+                const dot = document.createElement('div');
+                dot.className = "target-dot"; // Use target class
+                dot.dataset.score = s.value;
+                dot.dataset.field = "targetScore"; // Set field
+                dot.title = `Target: ${s.title}`;
+
+                if (s.value === score) {
+                    dot.classList.add('active', 'selected');
+                } else if (s.value < score) {
+                    dot.classList.add('active');
+                }
+                
+                const label = document.createElement('div');
+                label.className = "maturity-label";
+                label.textContent = s.value;
+                
+                dotWrapper.appendChild(dot);
+                dotWrapper.appendChild(label);
+                widget.appendChild(dotWrapper);
+
+                if (index < scoreLevels.length - 1) {
+                    const line = document.createElement('div');
+                    line.className = "target-line"; // Use target class
+                    if (s.value < score) {
+                        line.classList.add('active');
+                    }
+                    widget.appendChild(line);
+                }
+            });
+            return widget;
+        }
+
+        function updateDotWidget(widgetElement, newScore) {
             const score = parseInt(newScore, 10);
-            const dots = widgetElement.querySelectorAll('.maturity-dot');
-            const lines = widgetElement.querySelectorAll('.maturity-line');
+            const dots = widgetElement.querySelectorAll('.maturity-dot, .target-dot');
+            const lines = widgetElement.querySelectorAll('.maturity-line, .target-line');
 
             dots.forEach((dot, index) => {
                 dot.classList.remove('active', 'selected');
@@ -942,9 +995,6 @@ function renderAssessmentPage(domainId) {
             const container = document.getElementById('assessment-objectives-container');
             container.innerHTML = ''; // Clear old data
 
-            const scoreOptions = [
-                { value: 0, text: "0" }, { value: 1, text: "1" }, { value: 2, text: "2" }, { value: 3, text: "3" }
-            ];
             const impactOptions = [
                 { value: 1, text: "1-Low" }, { value: 2, text: "2-Med" }, { value: 3, text: "3-High" }
             ];
@@ -1025,10 +1075,9 @@ function renderAssessmentPage(domainId) {
                     table.innerHTML = `
                         <thead class="bg-slate-50">
                             <tr>
-                                <th class="col-maturity">Maturity</th>
+                                <th class="col-maturity" title="Blue: Current Score, Green: Target Score">Maturity (Current/Target)</th>
                                 <th class"col-evidence" title="Supporting documentation locations">Evidence</th>
                                 <th class="col-poc" title="Point of Contact - the primary person, department, or owners of the evidence.">POC</th>
-                                <th class="col-target-score" title="Intended maturity level by next assessment time (e.g. in twelve months).">Target</th>
                                 <th class="col-impact" title="What will this measure mean for business gains, threat identification and prevention, mean time to contain incidents, business resiliency?">Impact</th>
                                 <th class="col-loe" title="Represents level of effort required to achieve the Target Score maturity level.">LOE</th>
                                 <th class="col-target-date" title="When the target score should be achieved.">Target Date</th>
@@ -1048,7 +1097,7 @@ function renderAssessmentPage(domainId) {
                         const rowInfo = document.createElement('tr');
                         
                         const cellInfo = document.createElement('td');
-                        cellInfo.colSpan = 8; // 8 columns now
+                        cellInfo.colSpan = 7; // 7 columns now
                         // Add padding, remove bottom border
                         cellInfo.className = "pt-4 pb-2 px-4 border-b-0"; 
                         cellInfo.innerHTML = `
@@ -1062,10 +1111,11 @@ function renderAssessmentPage(domainId) {
                         const rowWidgets = document.createElement('tr');
                         rowWidgets.className = "hover:bg-slate-50"; // This row gets the hover and default bottom border
 
-                        // Maturity (Now first)
+                        // Maturity (Stacked Widgets)
                         const cellMaturity = document.createElement('td');
                         cellMaturity.className = "pb-4 pl-4"; // Add left/bottom padding
-                        cellMaturity.appendChild(createMaturityWidget(practice));
+                        cellMaturity.appendChild(createCurrentMaturityWidget(practice));
+                        cellMaturity.appendChild(createTargetMaturityWidget(practice)); // Stacked
                         rowWidgets.appendChild(cellMaturity);
                         
                         // Evidence
@@ -1079,12 +1129,6 @@ function renderAssessmentPage(domainId) {
                         cellPoc.className = "pb-4"; // Add padding
                         cellPoc.appendChild(createInput('text', practice.poc, practice.id, 'poc', 'Name/team...'));
                         rowWidgets.appendChild(cellPoc);
-                        
-                        // Target Score
-                        const cellTarget = document.createElement('td');
-                        cellTarget.className = "pb-4"; // Add padding
-                        cellTarget.appendChild(createSelect(scoreOptions, practice.targetScore, practice.id, 'targetScore'));
-                        rowWidgets.appendChild(cellTarget);
                         
                         // Impact
                         const cellImpact = document.createElement('td');
@@ -1263,28 +1307,37 @@ function renderAssessmentPage(domainId) {
             }
         }
         
-        function handleMaturityClick(e) {
-            const target = e.target.closest('.maturity-dot');
+        function handleWidgetClick(e) {
+            const target = e.target.closest('.maturity-dot, .target-dot');
             if (!target) return; // Didn't click a dot
 
-            const widget = target.closest('.maturity-widget');
+            const widget = target.closest('.maturity-widget, .target-widget');
             if (!widget) return;
 
             const practiceId = widget.dataset.id;
             const newScore = parseInt(target.dataset.score, 10);
+            const field = target.dataset.field; // 'score' or 'targetScore'
+
+            if (!field) return; // Should have a field
 
             const { practice, domainId, objective } = getPracticeById(practiceId);
             if (practice) {
-                practice.score = newScore;
+                practice[field] = newScore;
                 
                 // Save state
                 saveState();
                 
                 // Update UI
-                updateMaturityWidget(widget, newScore);
+                updateDotWidget(widget, newScore);
                 updateAssessmentSummary(activeDomain);
                 if (objective) {
                     updateObjectiveSubtotal(objective);
+                }
+                
+                // If the target was changed, refresh the dashboard and priorities pages
+                if (field === 'targetScore') {
+                    if (activePage === 'dashboard') renderDashboardPage();
+                    if (activePage === 'priorities') renderPrioritiesPage();
                 }
             }
         }
@@ -1317,7 +1370,7 @@ function renderAssessmentPage(domainId) {
             // Assessment page listeners
             const assessmentPage = document.getElementById('page-assessment');
             assessmentPage.addEventListener('change', handleAssessmentChange);
-            assessmentPage.addEventListener('click', handleMaturityClick); // Added click listener for widget
+            assessmentPage.addEventListener('click', handleWidgetClick); // Changed listener name
             document.getElementById('expand-all').addEventListener('click', handleCollapseExpand);
             document.getElementById('collapse-all').addEventListener('click', handleCollapseExpand);
             
