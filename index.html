@@ -6,7 +6,27 @@
     <title>CTI-CMM Assessment Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="cti-cmm-data.js"></script>
+    <script>
+        // Load the CMM data from the JSON file before the main script runs
+        (async () => {
+            try {
+                const response = await fetch('cti-cmm-data.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                window.CMM_DATA = await response.json();
+                console.log('CMM data loaded from JSON.');
+                initializeApp(); // Initialize the app after data is loaded
+            } catch (e) {
+                console.error("Failed to load cti-cmm-data.json:", e);
+                // Display an error to the user on the page
+                document.body.innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong class="font-bold">Fatal Error:</strong>
+                    <span class="block sm:inline">Could not load assessment data file (cti-cmm-data.json). Please ensure the file is present and accessible.</span>
+                </div>`;
+            }
+        })();
+    </script>
     <style>
         /* Custom scrollbar for aesthetics */
         ::-webkit-scrollbar {
@@ -1155,7 +1175,7 @@ function renderAssessmentPage(domainId) {
         }
 
         // --- INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
+        function initializeApp() {
             console.log('CTI-CMM Tool Initializing...');
             loadState(); // This now correctly builds the data
 
@@ -1185,7 +1205,7 @@ function renderAssessmentPage(domainId) {
             // Show initial page
             showPage('home');
             console.log('...Initialization Complete.');
-        });
+        }
 
     </script>
 </body>

@@ -114,10 +114,10 @@ def parse_domain_sheet(domain_df, domain_nickname):
             
     return objectives_dict
 
-def main(input_xlsx_path, output_js_path):
+def main(input_xlsx_path, output_json_path):
     """
     Main function to read the XLSX file, process all domain sheets,
-    and write the final JS file.
+    and write the final JSON file.
     """
     print(f"Loading workbook: {input_xlsx_path}")
     try:
@@ -186,28 +186,16 @@ def main(input_xlsx_path, output_js_path):
             print(f"Error: Failed to process sheet '{sheet_name}'. Error: {e}")
 
     # --- 3. Write the output file ---
-    print(f"\nProcessing complete. Writing to {output_js_path}...")
+    print(f"\nProcessing complete. Writing to {output_json_path}...")
     
     try:
         # Convert the Python dict to a pretty-printed JSON string
         json_data = json.dumps(CMM_DATA, indent=4)
         
-        # Wrap the JSON in the JavaScript variable assignment
-        output_content = f"""/*
- * CTI-CMM ASSESSMENT DATA FILE
- * ----------------------------
- * This file contains all the domains, objectives, and practices
- * for the CTI-CMM Assessment Tool, automatically generated from:
- * {input_xlsx_path}
- */
-
-const CMM_DATA = {json_data};
-"""
-        
-        with open(output_js_path, 'w', encoding='utf-8') as f:
-            f.write(output_content)
+        with open(output_json_path, 'w', encoding='utf-8') as f:
+            f.write(json_data)
             
-        print("Success! JavaScript data file created.")
+        print("Success! JSON data file created.")
 
     except Exception as e:
         print(f"Error: Could not write output file. Error: {e}")
@@ -215,8 +203,8 @@ const CMM_DATA = {json_data};
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: python convert_cmm_xlsx_to_js.py <input_xlsx_path> <output_js_path>")
-        print("Example: python convert_cmm_xlsx_to_js.py \"CTI-CMM Assessment v1.0.xlsx\" cti-cmm-data.js")
+        print("Usage: python convert_cmm_xlsx_to_json.py <input_xlsx_path> <output_json_path>")
+        print("Example: python convert_cmm_xlsx_to_json.py \"CTI-CMM Assessment v1.0.xlsx\" cti-cmm-data.json")
         sys.exit(1)
         
     input_file = sys.argv[1]
