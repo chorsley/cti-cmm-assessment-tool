@@ -172,6 +172,33 @@
         }
         .target-line.active { background-color: #22c55e; }
 
+        /* --- Sortable Header --- */
+        .sortable-header {
+            cursor: pointer;
+            user-select: none; /* Prevent text selection on click */
+            position: relative; /* For icon positioning */
+        }
+        .sortable-header:hover {
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .sortable-header span {
+            display: inline-block;
+            width: 1em; /* Reserve space */
+            text-align: right;
+            color: #94a3b8; /* slate-400 */
+        }
+        .sortable-header.sort-asc span::after {
+            content: '▲';
+            color: #334155; /* slate-700 */
+        }
+        .sortable-header.sort-desc span::after {
+            content: '▼';
+            color: #334155; /* slate-700 */
+        }
+        .sortable-header:not(.sort-asc):not(.sort-desc) span::after {
+            content: '↕'; /* Default icon */
+        }
+
     </style>
 </head>
 <body class="bg-slate-100 font-sans text-slate-900">
@@ -356,47 +383,24 @@
 
                 <div class="bg-white p-6 rounded-lg shadow-md mb-6">
                     <h3 class="text-xl font-semibold mb-4">What is this?</h3>
-                    <p class="text-slate-600">This planning sheet aggregates all practices where your <strong>Target Score</strong> is greater than your current <strong>Score</strong>. It helps you prioritize items based on their perceived <strong>Effort</strong> and <strong>Impact</strong>.</p>
-                    
-                    <div class="mt-4 flex items-center space-x-4">
-                        <label for="priority-threshold-impact" class="font-medium">Filter by Min Impact:</label>
-                        <select id="priority-threshold-impact" class="p-2 border rounded-md">
-                            <option value="1">1 (Low)</option>
-                            <option value="2">2 (Med)</option>
-                            <option value="3">3 (High)</option>
-                        </select>
-                        <label for="priority-threshold-loe" class="font-medium">Filter by Max Effort:</label>
-                        <select id="priority-threshold-loe" class="p-2 border rounded-md">
-                            <option value="3">3 (High)</option>
-                            <option value="2">2 (Med)</option>
-                            <option value="1">1 (Low)</option>
-                        </select>
-                        <label for="priority-sort-by" class="font-medium">Sort by:</label>
-                        <select id="priority-sort-by" class="p-2 border rounded-md">
-                            <option value="priority">Priority (High-Low)</option>
-                            <option value="impact">Impact (High-Low)</option>
-                            <option value="loe">Effort (Low-High)</option>
-                            <option value="domain">Domain (A-Z)</option>
-                        </select>
-                        <button id="filter-priorities" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md font-medium">Apply Filter</button>
-                    </div>
-                    </div>
+                    <p class="text-slate-600">This planning sheet aggregates all practices where your <strong>Target Score</strong> is greater than your current <strong>Score</strong>. Click any column header to sort the list and help you plan your improvement journey.</p>
+                </div>
 
                 <div class="bg-white rounded-lg shadow-md overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-slate-200">
                             <thead class="bg-slate-50">
                                 <tr>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Domain</th>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Objective</th>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Practice</th>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Score</th>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target</th>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Priority</th>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Impact</th>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Effort</th>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target Date</th>
-                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Notes</th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="domain">Domain <span></span></th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="objective">Objective <span></span></th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="practice">Practice <span></span></th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="score">Score <span></span></th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="target">Target <span></span></th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="impact">Impact <span></span></th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="loe">Effort <span></span></th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="priority">Priority <span></span></th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="date">Target Date <span></span></th>
+                                    <th class="py-3 px-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider sortable-header" data-sort="notes">Notes <span></span></th>
                                 </tr>
                             </thead>
                             <tbody id="priorities-table-body" class="bg-white divide-y divide-slate-200">
@@ -419,6 +423,7 @@
         // It's also the structure that will be saved to localStorage.
         let assessmentData = {};
         let appMode = 'benchmark'; // 'benchmark' or 'planning'
+        let prioritySort = { column: 'priority', direction: 'desc' }; // State for priority sorting
 
         // Helper to patch domain names (from request 3)
         // This patches the "name": "nan" bug from the source data
@@ -1316,10 +1321,6 @@ function renderAssessmentPage(domainId) {
         // === START MODIFICATION: RE-WRITE renderPrioritiesPage ===
         // ==================================
         function renderPrioritiesPage() {
-            const minImpact = parseInt(document.getElementById('priority-threshold-impact').value, 10);
-            const maxLoe = parseInt(document.getElementById('priority-threshold-loe').value, 10);
-            const sortBy = document.getElementById('priority-sort-by').value; // Get sort value
-            
             const tableBody = document.getElementById('priorities-table-body');
             tableBody.innerHTML = ''; // Clear old data
 
@@ -1331,10 +1332,13 @@ function renderAssessmentPage(domainId) {
                 
                 domain.objectives.forEach(objective => {
                     objective.practices.forEach(practice => {
+                        // Only include items that need improvement
                         if (parseInt(practice.targetScore, 10) > parseInt(practice.score, 10)) {
                             priorityItems.push({
                                 domain: domainMeta ? domainMeta.nickname : domainId,
                                 objective: objective.name, // Use the clean name
+                                practice: practice.slug, // Use slug for practice
+                                date: practice.targetDate, // Use 'date' for sorting
                                 ...practice
                             });
                         }
@@ -1342,50 +1346,85 @@ function renderAssessmentPage(domainId) {
                 });
             }
 
-            // Filter items
-            const filteredItems = priorityItems.filter(item => {
-                const impact = parseInt(item.impact, 10) || 1;
-                const loe = parseInt(item.loe, 10) || 3;
-                return impact >= minImpact && loe <= maxLoe;
+            // Sort items based on the global prioritySort state
+            priorityItems.sort((a, b) => {
+                const col = prioritySort.column;
+                let valA, valB;
+
+                // Get values based on column
+                switch (col) {
+                    case 'priority':
+                        valA = calculatePriority(a.impact, a.loe);
+                        valB = calculatePriority(b.impact, b.loe);
+                        // Handle '-' for non-numeric (sorts to bottom)
+                        if (valA === '-') valA = -Infinity;
+                        if (valB === '-') valB = -Infinity;
+                        break;
+                    case 'impact':
+                    case 'loe':
+                    case 'score':
+                    case 'target':
+                        // Use targetScore for 'target' column
+                        const key = col === 'target' ? 'targetScore' : col;
+                        valA = parseInt(a[key], 10) || 0;
+                        valB = parseInt(b[key], 10) || 0;
+                        break;
+                    case 'date': // Target Date
+                        valA = a.targetDate || '';
+                        valB = b.targetDate || '';
+                        // Handle empty dates (sort them to the end)
+                        if (valA === '' && valB !== '') return 1;
+                        if (valA !== '' && valB === '') return -1;
+                        if (valA === '' && valB === '') return 0;
+                        break;
+                    case 'domain':
+                    case 'objective':
+                    case 'practice': 
+                    case 'notes':
+                    default:
+                        valA = (a[col] || '').toLowerCase();
+                        valB = (b[col] || '').toLowerCase();
+                        break;
+                }
+
+                let result = 0;
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    result = valA - valB;
+                } else if (typeof valA === 'string' && typeof valB === 'string') {
+                    result = valA.localeCompare(valB);
+                }
+                
+                return prioritySort.direction === 'desc' ? result * -1 : result;
             });
             
-            // Sort items: Use new calculatePriority function
-            filteredItems.sort((a, b) => {
-                switch (sortBy) {
-                    case 'priority':
-                    default:
-                        const scoreA = calculatePriority(a.impact, a.loe);
-                        const scoreB = calculatePriority(b.impact, b.loe);
-                        if (scoreA === '-') return 1;
-                        if (scoreB === '-') return -1;
-                        return scoreB - scoreA; // Descending
-                    case 'impact':
-                        return (parseInt(b.impact, 10) || 0) - (parseInt(a.impact, 10) || 0); // Descending
-                    case 'loe':
-                        return (parseInt(a.loe, 10) || 1) - (parseInt(b.loe, 10) || 1); // Ascending (1-Low, 3-High)
-                    case 'domain':
-                        return a.domain.localeCompare(b.domain); // A-Z
+            // Update header sort indicators
+            const headers = document.querySelectorAll('#page-priorities .sortable-header');
+            headers.forEach(header => {
+                header.classList.remove('sort-asc', 'sort-desc');
+                if (header.dataset.sort === prioritySort.column) {
+                    header.classList.add(prioritySort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
                 }
             });
 
-            if (filteredItems.length === 0) {
+            if (priorityItems.length === 0) {
                 // Update colspan to 10
-                tableBody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-500">No priority items match your criteria. Try adjusting your Target Scores or filters.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-500">No priority items found. (Ensure 'Target' score is higher than 'Current' score for items in Planning Mode).</td></tr>`;
                 return;
             }
 
-            filteredItems.forEach(item => {
+            // Render rows
+            priorityItems.forEach(item => {
                 const priority = calculatePriority(item.impact, item.loe); // Calculate priority
                 const row = `
                     <tr class="hover:bg-slate-50">
                         <td class="py-4 px-4 text-sm font-medium text-slate-900">${item.domain}</td>
                         <td class="py-4 px-4 text-sm text-slate-500">${item.objective.substring(0, 50)}...</td>
-                        <td class="py-4 px-4 text-sm text-slate-700">${item.slug}</td>
+                        <td class="py-4 px-4 text-sm text-slate-700">${item.practice}</td>
                         <td class="py-4 px-4 text-sm text-slate-500">${item.score}</td>
                         <td class="py-4 px-4 text-sm text-slate-500 font-bold text-green-600">${item.targetScore}</td>
+                        <td class="py-4 px-4 text-sm text-slate-500">${item.impact || '-'}</td>
+                        <td class="py-4 px-4 text-sm text-slate-500">${item.loe || '-'}</td>
                         <td class="py-4 px-4 text-sm text-slate-500 font-bold text-center">${priority}</td>
-                        <td class="py-4 px-4 text-sm text-slate-500">${item.impact}</td>
-                        <td class="py-4 px-4 text-sm text-slate-500">${item.loe}</td>
                         <td class="py-4 px-4 text-sm text-slate-500">${item.targetDate}</td>
                         <td class="py-4 px-4 text-sm text-slate-500">${item.notes.substring(0, 50)}...</td>
                     </tr>
@@ -1513,6 +1552,34 @@ function renderAssessmentPage(domainId) {
             showPage(activePage, activeDomain);
         }
 
+        // ==================================
+        // === START MODIFICATION: ADD SORT HANDLER ===
+        // ==================================
+        function handlePrioritySortClick(e) {
+            const target = e.target.closest('.sortable-header');
+            if (!target) return;
+
+            const newColumn = target.dataset.sort;
+            if (!newColumn) return;
+
+            if (prioritySort.column === newColumn) {
+                // Flip direction
+                prioritySort.direction = (prioritySort.direction === 'asc') ? 'desc' : 'asc';
+            } else {
+                // New column
+                prioritySort.column = newColumn;
+                // Default sort directions (descending for numbers, ascending for text)
+                const descDefaults = ['priority', 'impact', 'score', 'target'];
+                prioritySort.direction = descDefaults.includes(newColumn) ? 'desc' : 'asc';
+            }
+            
+            // Re-render the page
+            renderPrioritiesPage();
+        }
+        // ==================================
+        // === END MODIFICATION ===
+        // ==================================
+
         // --- INITIALIZATION ---
         function initializeApp() {
             console.log('CTI-CMM Tool Initializing...');
@@ -1539,13 +1606,10 @@ function renderAssessmentPage(domainId) {
             document.getElementById('collapse-all').addEventListener('click', handleCollapseExpand);
             
             // ==================================
-            // === START MODIFICATION: ADD SORT LISTENER ===
+            // === START MODIFICATION: UPDATE LISTENERS ===
             // ==================================
-            // Priorities page listeners
-            document.getElementById('filter-priorities').addEventListener('click', renderPrioritiesPage);
-            document.getElementById('priority-threshold-impact').addEventListener('change', renderPrioritiesPage);
-            document.getElementById('priority-threshold-loe').addEventListener('change', renderPrioritiesPage);
-            document.getElementById('priority-sort-by').addEventListener('change', renderPrioritiesPage);
+            // Priorities page listener
+            document.querySelector('#page-priorities thead').addEventListener('click', handlePrioritySortClick);
             // ==================================
             // === END MODIFICATION ===
             // ==================================
