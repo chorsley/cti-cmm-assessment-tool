@@ -10,7 +10,12 @@
         // Load the CMM data from the JSON file before the main script runs
         (async () => {
             try {
-                const response = await fetch('cti-cmm-data.json?' + new Date().getTime());
+                // === CACHE BUSTING MODIFICATION ===
+                // Appending the current time as a query string forces the browser
+                // to download a fresh copy every time.
+                const response = await fetch('cti-cmm-data.json?v=' + new Date().getTime());
+                // === END MODIFICATION ===
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -426,6 +431,7 @@
         // --- 1. Constants ---
         const STORAGE_KEY = 'ctiCmmAssessmentData';
         const MODE_STORAGE_KEY = 'ctiCmmAppMode';
+        const VIEW_STORAGE_KEY = 'ctiCmmAppView'; 
 
         // Helper to patch domain names
         const DOMAIN_NAME_MAP = {
@@ -498,6 +504,16 @@
         // --- 4. Utility Functions (utils) ---
         // Pure functions for calculations and data transformations
         const utils = {
+            /**
+             * Gets a specific parameter from the URL query string.
+             */
+            getUrlParameter(name) {
+                name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+                const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+                const results = regex.exec(location.search);
+                return results === null ? null : decodeURIComponent(results[1].replace(/\+/g, ' '));
+            },
+
             /**
              * Parses a score from the data model.
              * Returns null if unset (null, undefined), otherwise returns the integer value.
@@ -887,6 +903,7 @@
             resetData() {
                 if (confirm('Are you sure you want to reset all assessment data? This action cannot be undone.')) {
                     localStorage.removeItem(STORAGE_KEY);
+                    localStorage.removeItem(VIEW_STORAGE_KEY); 
                     location.reload();
                 }
             },
@@ -949,9 +966,51 @@
             /**
              * Main page router. Hides all pages and shows the target one.
              */
-            showPage(pageId, domainId = null) {
+            showPage(pageId, domainId = null, fromPopState = false) {
                 store.setActivePage(pageId, domainId);
                 
+                // Save current view to localStorage for next session
+                try {
+                    const viewToSave = JSON.stringify({ page: pageId, domain: domainId });
+                    localStorage.setItem(VIEW_STORAGE_KEY, viewToSave);
+                } catch (e) {
+                    console.warn('localStorage write failed (view):', e.message);
+                }
+                
+                // === NEW CODE: Update Browser History ===
+                if (!fromPopState) {
+                    const state = { page: pageId, domain: domainId };
+                    let title = "CTI-CMM Assessment Tool";
+                    let url = window.location.pathname; // Get base path (e.g., /index.html)
+
+                    // Create the new URL
+                    if (pageId === 'assessment' && domainId) {
+                        title = `${domainId} - ${title}`;
+                        url += `?domain=${domainId}`;
+                    } else if (pageId !== 'home') {
+                        title = `${pageId.charAt(0).toUpperCase() + pageId.slice(1)} - ${title}`;
+                        url += `?page=${pageId}`;
+                    }
+                    
+                    // Only push state if the URL is actually different
+                    // (prevents duplicate history entries on redundant clicks)
+                    const fullUrl = window.location.origin + url;
+                    if (fullUrl !== window.location.href) {
+                         window.history.pushState(state, title, url);
+                    }
+                    document.title = title; // Also update the document title
+                } else {
+                    // Even on popstate, update the document title
+                    let title = "CTI-CMM Assessment Tool";
+                    if (pageId === 'assessment' && domainId) {
+                        title = `${domainId} - ${title}`;
+                    } else if (pageId !== 'home') {
+                        title = `${pageId.charAt(0).toUpperCase() + pageId.slice(1)} - ${title}`;
+                    }
+                    document.title = title;
+                }
+                // === END NEW CODE ===
+
                 // Hide all pages
                 document.querySelectorAll('.page').forEach(page => {
                     page.style.display = 'none';
@@ -1858,7 +1917,7 @@
                     e.preventDefault(); 
                     const pageId = target.dataset.page;
                     const domainId = target.dataset.domain;
-                    view.showPage(pageId, domainId);
+                    view.showPage(pageId, domainId, false); // Pass false, this is a user click
                 }
             },
 
@@ -1870,7 +1929,7 @@
                 store.setAppMode(newMode);
                 view.updateNavVisibility();
                 // Re-render current page to show/hide fields
-                view.showPage(state.activePage, state.activeDomain);
+                view.showPage(state.activePage, state.activeDomain, false); // Pass false
             },
             
             /**
@@ -2018,11 +2077,26 @@
                     newDirection = (state.prioritySort.direction === 'asc') ? 'desc' : 'asc';
                 } else {
                     const descDefaults = ['priority', 'impact', 'score', 'target'];
-                    newDirection = descDefaults.includes(newColumn) ? 'desc' : 'asc';
+                    newDirection = descDefaults.includes(newColumn) ? 'desc' : 'desc';
                 }
                 
                 store.setPrioritySort(newColumn, newDirection);
                 view.renderPrioritiesPage(); // Re-render will read new state
+            },
+
+            /**
+             * Handles the browser's back/forward button navigation.
+             */
+            handlePopState(e) {
+                if (e.state) {
+                    // e.state is the { page, domain } object we pushed
+                    console.log('PopState: Navigating to', e.state);
+                    view.showPage(e.state.page, e.state.domain, true); // Pass true
+                } else {
+                    // This happens when going back to the very first load
+                    console.log('PopState: Navigating to initial state (home)');
+                    view.showPage('home', null, true); // Pass true
+                }
             }
         };
 
@@ -2038,9 +2112,12 @@
             dom.modeToggle.addEventListener('change', events.handleModeToggle);
             
             // --- Event Delegation ---
-            // One handler for all changes and one for all clicks in the main content area
             dom.mainContent.addEventListener('change', events.handleContentChange);
             dom.mainContent.addEventListener('click', events.handleContentClick);
+
+            // === NEW CODE: Handle Browser Back/Forward ===
+            window.addEventListener('popstate', events.handlePopState);
+            // === END NEW CODE ===
         }
 
         /**
@@ -2074,9 +2151,50 @@
 
             bindEvents();
             
-            view.updateNavVisibility(); // Show/hide priorities link
-            view.updateSidebarProgress(); // Set initial progress bars
-            view.showPage('home'); // Show the home page
+            // === MODIFICATION FOR URL PARAMS & VIEW RESTORE ===
+            
+            // 1. Check URL parameters first (explicit intent)
+            let urlPage = utils.getUrlParameter('page');
+            let urlDomain = utils.getUrlParameter('domain');
+
+            // Handle shortcut: ?domain=ASSET should imply page=assessment
+            if (urlDomain && !urlPage) {
+                urlPage = 'assessment';
+            }
+
+            let lastPage = 'home';
+            let lastDomain = null;
+
+            if (urlPage) {
+                // Use URL params
+                lastPage = urlPage;
+                lastDomain = urlDomain;
+                console.log(`Loading from URL: ${lastPage}, ${lastDomain || ''}`);
+            } else {
+                // 2. If no URL params, check localStorage (previous session)
+                try {
+                    const savedView = localStorage.getItem(VIEW_STORAGE_KEY);
+                    if (savedView) {
+                        const parsedView = JSON.parse(savedView);
+                        lastPage = parsedView.page || 'home';
+                        lastDomain = parsedView.domain || null;
+                        console.log(`Restoring from localStorage: ${lastPage}, ${lastDomain || ''}`);
+                    }
+                } catch (e) {
+                    console.warn('localStorage read failed (view):', e.message);
+                }
+            }
+            
+            // 3. Set the initial page. showPage() will save this as the new "last view"
+            // We pass 'false' because we want the *initial load* to set the URL
+            // in case it was loaded from localStorage (which has no URL yet).
+            view.showPage(lastPage, lastDomain, false); 
+            
+            // 4. Run visibility checks
+            view.updateNavVisibility(); 
+            view.updateSidebarProgress(); 
+            
+            // === END MODIFICATION ===
             
             console.log('...Initialization Complete.');
         }
