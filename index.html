@@ -10,7 +10,7 @@
         // Load the CMM data from the JSON file before the main script runs
         (async () => {
             try {
-                const response = await fetch('cti-cmm-data.json');
+                const response = await fetch('cti-cmm-data.json?' + new Date().getTime());
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -674,13 +674,61 @@
         // Functions that mutate state and handle persistence
         const store = {
             /**
-             * Saves the main assessment data to localStorage.
+             * Saves only the user-editable data to localStorage.
              */
             saveState() {
                 try {
-                    const dataToSave = JSON.stringify(state.assessmentData);
-                    localStorage.setItem(STORAGE_KEY, dataToSave);
-                    console.log('Assessment data saved.');
+                    // Create a new object to hold only the data we want to save.
+                    const dataToSave = {}; 
+                    
+                    // Iterate over each domain in the current state
+                    for (const domainId in state.assessmentData) {
+                        if (state.assessmentData.hasOwnProperty(domainId)) {
+                            const domainState = state.assessmentData[domainId];
+                            
+                            // Initialize the domain in our save object
+                            dataToSave[domainId] = {
+                                // Save domain-level user data
+                                date: domainState.date,
+                                relevant: domainState.relevant,
+                                // We need to store objectives, but only with practice data
+                                objectives: [] 
+                            };
+
+                            // Iterate over objectives
+                            domainState.objectives.forEach(objectiveState => {
+                                const objectiveToSave = {
+                                    id: objectiveState.id, // Need ID to merge later
+                                    practices: []
+                                };
+
+                                // Iterate over practices and extract user data
+                                objectiveState.practices.forEach(practiceState => {
+                                    // This is the user-data-only object
+                                    const practiceToSave = {
+                                        id: practiceState.id, // Need ID to merge later
+                                        score: practiceState.score,
+                                        targetScore: practiceState.targetScore,
+                                        impact: practiceState.impact,
+                                        loe: practiceState.loe,
+                                        evidence: practiceState.evidence,
+                                        poc: practiceState.poc,
+                                        targetDate: practiceState.targetDate,
+                                        notes: practiceState.notes
+                                        // We deliberately DO NOT save: text, slug, maturity, max, etc.
+                                    };
+                                    objectiveToSave.practices.push(practiceToSave);
+                                });
+                                
+                                dataToSave[domainId].objectives.push(objectiveToSave);
+                            });
+                        }
+                    }
+
+                    // Now, dataToSave contains *only* IDs and user-entered fields.
+                    const savedString = JSON.stringify(dataToSave);
+                    localStorage.setItem(STORAGE_KEY, savedString);
+                    console.log('User assessment data saved.');
                 } catch (error) {
                     console.error('Error saving data to localStorage:', error);
                 }
@@ -711,23 +759,74 @@
                 }
                 dom.modeToggle.checked = (state.appMode === 'planning');
                 
-                // Load assessment data
+                // 1. Get the fresh, authoritative data structure
+                const defaultData = store.getDefaultAssessmentData();
+                
+                // 2. Load the user's saved progress
+                let userProgress = {};
                 try {
                     const savedData = localStorage.getItem(STORAGE_KEY);
-                    const defaultData = store.getDefaultAssessmentData();
                     if (savedData) {
-                        const parsedData = JSON.parse(savedData);
-                        // Merge saved data with default structure
-                        state.assessmentData = utils.deepMerge(defaultData, parsedData);
-                        console.log('Assessment data loaded.');
+                        userProgress = JSON.parse(savedData);
+                        console.log('User progress loaded.');
                     } else {
-                        state.assessmentData = defaultData;
-                        console.log('No saved data. Initializing default data.');
+                        console.log('No saved data found.');
                     }
                 } catch (error) {
-                    console.error('Error loading data from localStorage:', error);
-                    state.assessmentData = store.getDefaultAssessmentData();
+                    console.error('Error loading user data from localStorage:', error);
+                    userProgress = {};
                 }
+
+                // 3. Manually merge userProgress *into* defaultData
+                // We will modify defaultData in-place and then assign it to state
+                for (const domainId in defaultData) {
+                    if (userProgress[domainId]) {
+                        const userDomain = userProgress[domainId];
+                        const defaultDomain = defaultData[domainId];
+
+                        // Merge domain-level fields
+                        if (userDomain.date !== undefined) defaultDomain.date = userDomain.date;
+                        if (userDomain.relevant !== undefined) defaultDomain.relevant = userDomain.relevant;
+
+                        // Create a map of user practices for easy lookup
+                        const userPracticeMap = new Map();
+                        if (userDomain.objectives) {
+                            userDomain.objectives.forEach(userObj => {
+                                if (userObj.practices) {
+                                    userObj.practices.forEach(userPractice => {
+                                        userPracticeMap.set(userPractice.id, userPractice);
+                                    });
+                                }
+                            });
+                        }
+                        
+                        // Iterate default structure and apply user data
+                        if (defaultDomain.objectives) {
+                            defaultDomain.objectives.forEach(defaultObj => {
+                                if (defaultObj.practices) {
+                                    defaultObj.practices.forEach(defaultPractice => {
+                                        const userPractice = userPracticeMap.get(defaultPractice.id);
+                                        if (userPractice) {
+                                            // Apply saved user data
+                                            defaultPractice.score = userPractice.score;
+                                            defaultPractice.targetScore = userPractice.targetScore;
+                                            defaultPractice.impact = userPractice.impact;
+                                            defaultPractice.loe = userPractice.loe;
+                                            defaultPractice.evidence = userPractice.evidence;
+                                            defaultPractice.poc = userPractice.poc;
+                                            defaultPractice.targetDate = userPractice.targetDate;
+                                            defaultPractice.notes = userPractice.notes;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    }
+                }
+                
+                // 4. The merge is complete. Set the state.
+                state.assessmentData = defaultData;
+                console.log('Assessment data loaded and merged.');
             },
 
             /**
@@ -751,6 +850,12 @@
                                 ...p,
                                 score: null,
                                 targetScore: null,
+                                impact: 1, // Default to 1-Low
+                                loe: 1,    // Default to 1-Low
+                                evidence: '',
+                                poc: '',
+                                targetDate: '',
+                                notes: ''
                             }));
 
                             newObjectivesArray.push({
