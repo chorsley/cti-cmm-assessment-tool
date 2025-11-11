@@ -237,7 +237,23 @@
                 </li>
                 <li class="pt-8">
                     <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Data</h2>
-                    <div class="p-2">
+                    <div class="p-2 space-y-3">
+                        <div>
+                            <label for="assessment-name" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Assessment Name</label>
+                            <input type="text" id="assessment-name" class="mt-1 w-full bg-slate-700 text-white text-sm p-2 rounded-md border border-slate-600 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Q3 2025 Assessment">
+                        </div>
+
+                        <button id="export-json" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-3 rounded-md">
+                            Export Results (.json)
+                        </button>
+
+                        <div>
+                            <label for="import-json" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-3 rounded-md cursor-pointer block text-center">
+                                Import Results (.json)
+                            </label>
+                            <input type="file" id="import-json" class="hidden" accept=".json,application/json">
+                        </div>
+
                         <button id="reset-data" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-3 rounded-md">
                             Reset All Data
                         </button>
@@ -432,6 +448,7 @@
         const STORAGE_KEY = 'ctiCmmAssessmentData';
         const MODE_STORAGE_KEY = 'ctiCmmAppMode';
         const VIEW_STORAGE_KEY = 'ctiCmmAppView'; 
+        const ASSESSMENT_NAME_KEY = 'ctiCmmAssessmentName';
 
         // Helper to patch domain names
         const DOMAIN_NAME_MAP = {
@@ -468,6 +485,7 @@
             prioritySort: { column: 'priority', direction: 'desc' },
             activePage: 'home',
             activeDomain: null,
+            assessmentName: '',
             chartInstances: {
                 radar: null,
                 doughnut: null
@@ -483,6 +501,9 @@
             modeToggle: document.getElementById('mode-toggle'),
             resetData: document.getElementById('reset-data'),
             domainNav: document.getElementById('domain-nav'),
+            assessmentNameInput: document.getElementById('assessment-name'),
+            exportButton: document.getElementById('export-json'),
+            importButton: document.getElementById('import-json'),
             // Page containers
             pageHome: document.getElementById('page-home'),
             pageDashboard: document.getElementById('page-dashboard'),
@@ -690,58 +711,64 @@
         // Functions that mutate state and handle persistence
         const store = {
             /**
+             * Gets the user-editable data object, ready for saving or exporting.
+             */
+            getUserDataForSave() {
+                const dataToSave = {}; 
+                
+                // Iterate over each domain in the current state
+                for (const domainId in state.assessmentData) {
+                    if (state.assessmentData.hasOwnProperty(domainId)) {
+                        const domainState = state.assessmentData[domainId];
+                        
+                        // Initialize the domain in our save object
+                        dataToSave[domainId] = {
+                            // Save domain-level user data
+                            date: domainState.date,
+                            relevant: domainState.relevant,
+                            // We need to store objectives, but only with practice data
+                            objectives: [] 
+                        };
+
+                        // Iterate over objectives
+                        domainState.objectives.forEach(objectiveState => {
+                            const objectiveToSave = {
+                                id: objectiveState.id, // Need ID to merge later
+                                practices: []
+                            };
+
+                            // Iterate over practices and extract user data
+                            objectiveState.practices.forEach(practiceState => {
+                                // This is the user-data-only object
+                                const practiceToSave = {
+                                    id: practiceState.id, // Need ID to merge later
+                                    score: practiceState.score,
+                                    targetScore: practiceState.targetScore,
+                                    impact: practiceState.impact,
+                                    loe: practiceState.loe,
+                                    evidence: practiceState.evidence,
+                                    poc: practiceState.poc,
+                                    targetDate: practiceState.targetDate,
+                                    notes: practiceState.notes
+                                    // We deliberately DO NOT save: text, slug, maturity, max, etc.
+                                };
+                                objectiveToSave.practices.push(practiceToSave);
+                            });
+                            
+                            dataToSave[domainId].objectives.push(objectiveToSave);
+                        });
+                    }
+                }
+                return dataToSave;
+            },
+
+            /**
              * Saves only the user-editable data to localStorage.
              */
             saveState() {
                 try {
-                    // Create a new object to hold only the data we want to save.
-                    const dataToSave = {}; 
-                    
-                    // Iterate over each domain in the current state
-                    for (const domainId in state.assessmentData) {
-                        if (state.assessmentData.hasOwnProperty(domainId)) {
-                            const domainState = state.assessmentData[domainId];
-                            
-                            // Initialize the domain in our save object
-                            dataToSave[domainId] = {
-                                // Save domain-level user data
-                                date: domainState.date,
-                                relevant: domainState.relevant,
-                                // We need to store objectives, but only with practice data
-                                objectives: [] 
-                            };
-
-                            // Iterate over objectives
-                            domainState.objectives.forEach(objectiveState => {
-                                const objectiveToSave = {
-                                    id: objectiveState.id, // Need ID to merge later
-                                    practices: []
-                                };
-
-                                // Iterate over practices and extract user data
-                                objectiveState.practices.forEach(practiceState => {
-                                    // This is the user-data-only object
-                                    const practiceToSave = {
-                                        id: practiceState.id, // Need ID to merge later
-                                        score: practiceState.score,
-                                        targetScore: practiceState.targetScore,
-                                        impact: practiceState.impact,
-                                        loe: practiceState.loe,
-                                        evidence: practiceState.evidence,
-                                        poc: practiceState.poc,
-                                        targetDate: practiceState.targetDate,
-                                        notes: practiceState.notes
-                                        // We deliberately DO NOT save: text, slug, maturity, max, etc.
-                                    };
-                                    objectiveToSave.practices.push(practiceToSave);
-                                });
-                                
-                                dataToSave[domainId].objectives.push(objectiveToSave);
-                            });
-                        }
-                    }
-
-                    // Now, dataToSave contains *only* IDs and user-entered fields.
+                    // Use the new helper function
+                    const dataToSave = store.getUserDataForSave();
                     const savedString = JSON.stringify(dataToSave);
                     localStorage.setItem(STORAGE_KEY, savedString);
                     console.log('User assessment data saved.');
@@ -763,6 +790,18 @@
             },
 
             /**
+             * Saves the current assessment name to localStorage.
+             */
+            saveAssessmentName() {
+                try {
+                    localStorage.setItem(ASSESSMENT_NAME_KEY, state.assessmentName);
+                    console.log('Assessment name saved.');
+                } catch (e) {
+                    console.warn('localStorage write failed (name):', e.message);
+                }
+            },
+
+            /**
              * Loads all data and mode from localStorage into the state.
              */
             loadState() {
@@ -774,6 +813,15 @@
                     state.appMode = 'benchmark';
                 }
                 dom.modeToggle.checked = (state.appMode === 'planning');
+
+                // Load Assessment Name
+                try {
+                    state.assessmentName = localStorage.getItem(ASSESSMENT_NAME_KEY) || '';
+                    dom.assessmentNameInput.value = state.assessmentName;
+                } catch (e) {
+                    console.warn('localStorage read failed (name):', e.message);
+                    state.assessmentName = '';
+                }
                 
                 // 1. Get the fresh, authoritative data structure
                 const defaultData = store.getDefaultAssessmentData();
@@ -904,6 +952,7 @@
                 if (confirm('Are you sure you want to reset all assessment data? This action cannot be undone.')) {
                     localStorage.removeItem(STORAGE_KEY);
                     localStorage.removeItem(VIEW_STORAGE_KEY); 
+                    localStorage.removeItem(ASSESSMENT_NAME_KEY);
                     location.reload();
                 }
             },
@@ -1901,6 +1950,58 @@
                 } else {
                     alert('Your browser does not support automatic CSV downloads.');
                 }
+            },
+
+            /**
+             * Gathers all user data, builds a JSON file, and triggers a download.
+             */
+            exportResultsToJSON() {
+                console.log('Exporting results to JSON...');
+                
+                // 1. Get data
+                const userData = store.getUserDataForSave(); // Use the refactored helper
+                const toolVersionEl = document.querySelector('h1 + span.text-slate-400');
+                const toolVersion = toolVersionEl ? toolVersionEl.textContent.split(' ')[1] : '1.2';
+
+                const exportData = {
+                    assessmentName: state.assessmentName,
+                    exportDate: new Date().toISOString(),
+                    toolVersion: toolVersion,
+                    data: userData
+                };
+                
+                // 2. Build JSON String
+                const jsonString = JSON.stringify(exportData, null, 2); // Pretty-print
+                
+                // 3. Create and trigger download
+                const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8;' });
+                const link = document.createElement('a');
+                
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Create a sanitized filename
+                    let fileName = (state.assessmentName || 'cti-cmm-assessment')
+                        .trim()
+                        .toLowerCase()
+                        .replace(/[^a-z0-9\s-]/g, '')  // Remove non-alphanumeric/space/hyphen
+                        .replace(/[\s_-]+/g, '-')     // Replace spaces/underscores with hyphens
+                        .replace(/^-+|-+$/g, '');   // Trim leading/trailing hyphens
+                    
+                    if (fileName.length === 0) fileName = 'cti-cmm-assessment';
+
+                    fileName = `${fileName}-export-${new Date().toISOString().split('T')[0]}.json`;
+                    
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', fileName);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                } else {
+                    alert('Your browser does not support automatic JSON downloads.');
+                }
             }
         };
 
@@ -2097,6 +2198,54 @@
                     console.log('PopState: Navigating to initial state (home)');
                     view.showPage('home', null, true); // Pass true
                 }
+            },
+
+            /**
+             * Handles the assessment name input change.
+             */
+            handleAssessmentNameChange(e) {
+                state.assessmentName = e.target.value;
+                store.saveAssessmentName();
+            },
+
+            /**
+             * Handles the file import selection.
+             */
+            handleImportChange(e) {
+                const file = e.target.files[0];
+                if (!file) {
+                    return; // No file selected
+                }
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        
+                        // Basic validation
+                        if (typeof importedData !== 'object' || importedData === null || !importedData.data || !importedData.hasOwnProperty('assessmentName')) {
+                            throw new Error('Invalid file structure. Missing "data" or "assessmentName" key.');
+                        }
+                        
+                        if (confirm('This will overwrite all current assessment data in your browser. This action cannot be undone. Are you sure you want to proceed?')) {
+                            // Save the new data
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(importedData.data));
+                            localStorage.setItem(ASSESSMENT_NAME_KEY, importedData.assessmentName);
+                            
+                            // Reload to apply
+                            alert('Import successful! The application will now reload.');
+                            location.reload();
+                        } else {
+                            // User cancelled
+                            e.target.value = null; // Reset file input
+                        }
+                    } catch (error) {
+                        console.error('Import failed:', error);
+                        alert('Import failed. The selected file is either not valid JSON or does not have the correct CTI-CMM export format.');
+                        e.target.value = null; // Reset file input
+                    }
+                };
+                reader.readAsText(file);
             }
         };
 
@@ -2114,6 +2263,11 @@
             // --- Event Delegation ---
             dom.mainContent.addEventListener('change', events.handleContentChange);
             dom.mainContent.addEventListener('click', events.handleContentClick);
+
+            // === NEW: Sidebar Listeners ===
+            dom.assessmentNameInput.addEventListener('change', events.handleAssessmentNameChange);
+            dom.exportButton.addEventListener('click', view.exportResultsToJSON);
+            dom.importButton.addEventListener('change', events.handleImportChange);
 
             // === NEW CODE: Handle Browser Back/Forward ===
             window.addEventListener('popstate', events.handlePopState);
