@@ -206,7 +206,7 @@
         <nav class="w-64 bg-slate-800 text-slate-200 flex-shrink-0 overflow-y-auto">
             <div class="p-4">
                 <h1 class="text-xl font-bold text-white">CTI-CMM Tool</h1>
-                <span class="text-sm text-slate-400">Assessment v1.2</span>
+                <span class="text-sm text-slate-400">Assessment v1.5</span>
             </div>
             <ul id="main-nav" class="space-y-1 p-2">
                 <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="home">Home</a></li>
@@ -269,7 +269,7 @@
             
             <div id="page-home" class="page max-w-4xl mx-auto">
                 <div class="bg-white p-8 rounded-lg shadow-md">
-                    <h2 class="text-3xl font-bold text-slate-800 mb-4">Welcome to the CTI-CMM Assessment Tool (BETA Version 1.2)</h2>
+                    <h2 class="text-3xl font-bold text-slate-800 mb-4">Welcome to the CTI-CMM Assessment Tool (BETA Version 1.5)</h2>
                     <p class="text-lg text-slate-600 mb-6">The Cyber Threat Intelligence Capability Maturity Model (CTI-CMM) is designed to help improve cyber threat intelligence teams support to cybersecurity and risk management functions, leading to improved security outomes. Its goal is to provide a roadmap on how intelligence programs can mature existing support and process constructs to ultimately strengthen the organization's operational resilience. The CTI-CMM is industry sector, organization type, and size agnostic and was inspired by the U.S. Department of Energy's C2M2 cybersecurity framework. </p>
 
                     <p class="text-lg text-slate-600 mb-6">The CTI-CMM offers a stakeholder-first approach to CTI maturity. The CTI-CMM focuses on the implementation and management of CTI best practices associated with information technology (IT), operational technology (OT), and information assets and the environments in which they operate. The model can be used to:</p>
@@ -437,6 +437,338 @@
     </div>
 
     <script>
+    
+// ========================================================================
+// === CTI-CMM DATA MODEL CLASSES =========================================
+// ========================================================================
+
+/**
+ * Represents a single assessment practice.
+ * It holds both the static data (from cti-cmm-data.json)
+ * and the user-editable data (from localStorage).
+ */
+class Practice {
+    // --- Static Data (from JSON) ---
+    id;
+    maturity;
+    text;
+    slug;
+    max;
+
+    // --- User Data (with defaults) ---
+    score = null;
+    targetScore = null;
+    impact = 1;
+    loe = 1;
+    evidence = '';
+    poc = '';
+    targetDate = '';
+    notes = '';
+
+    /**
+     * Creates a Practice instance from the static cti-cmm-data.json data.
+     * --- FIX v1.5 ---
+     * This constructor now *only* copies static properties, preserving the
+     * class defaults (like `score = null`) for user-editable fields.
+     * This prevents the `score: 0` from the JSON file from being used.
+     */
+    constructor(staticData) {
+        // Manually assign only the *static* properties
+        this.id = staticData.id;
+        this.maturity = staticData.maturity;
+        this.text = staticData.text;
+        this.slug = staticData.slug;
+        this.max = staticData.max;
+        
+        // This ensures that the class property defaults for user data
+        // (like `score = null`) are preserved, and the `score: 0`
+        // from the JSON file is ignored.
+    }
+
+    /**
+     * Applies saved user data (from import/localStorage) to this instance.
+     * This is the "deserialization" step.
+     */
+    loadUserData(savedData) {
+        // Define which keys are user-editable
+        const userKeys = [
+            'score', 'targetScore', 'impact', 'loe', 
+            'evidence', 'poc', 'targetDate', 'notes'
+        ];
+        
+        for (const key of userKeys) {
+            // Check if the key exists in the saved data to avoid
+            // overwriting defaults with 'undefined'
+            if (savedData[key] !== undefined) {
+                this[key] = savedData[key];
+            }
+        }
+    }
+
+    /**
+     * Returns a clean POJO (Plain Old JavaScript Object)
+     * of *only* the user-editable data for saving.
+     * This is the "serialization" step.
+     */
+    serialize() {
+        return {
+            id: this.id, // ID is crucial for re-mapping
+            score: this.score,
+            targetScore: this.targetScore,
+            impact: this.impact,
+            loe: this.loe,
+            evidence: this.evidence,
+            poc: this.poc,
+            targetDate: this.targetDate,
+            notes: this.notes
+        };
+    }
+
+    /**
+     * Encapsulated logic.
+     * Replaces utils.calculatePriority(impact, loe)
+     */
+    calculatePriority() {
+        const impactVal = parseInt(this.impact, 10);
+        const loeVal = parseInt(this.loe, 10);
+        if (!impactVal || !loeVal || impactVal < 1 || loeVal < 1) {
+            return "-";
+        }
+        return impactVal + (4 - loeVal); // Formula: Impact + (4 - LOE)
+    }
+
+    /**
+     * Parses a score string/number/null into an integer or null.
+     */
+    parseScore(scoreValue) {
+        if (scoreValue === null || scoreValue === undefined) {
+            return null;
+        }
+        const intScore = parseInt(scoreValue, 10);
+        return isNaN(intScore) ? null : intScore;
+    }
+}
+
+/**
+ * Represents an Objective, which contains a list of Practices.
+ */
+class Objective {
+    id;
+    name;
+    practices = []; // This will be an array of Practice instances
+
+    constructor(staticData) {
+        this.id = staticData.id;
+        this.name = staticData.name;
+        // Create Practice instances for each practice in the static data
+        this.practices = staticData.practices.map(pData => new Practice(pData));
+    }
+
+    loadUserData(savedObjective) {
+        // Create a map for efficient lookup
+        const practiceMap = new Map();
+        if (savedObjective.practices) {
+            savedObjective.practices.forEach(pData => practiceMap.set(pData.id, pData));
+        }
+
+        // Tell each Practice instance to load its user data
+        for (const practice of this.practices) {
+            const savedPractice = practiceMap.get(practice.id);
+            if (savedPractice) {
+                practice.loadUserData(savedPractice);
+            }
+        }
+    }
+
+    serialize() {
+        return {
+            id: this.id,
+            practices: this.practices.map(p => p.serialize())
+        };
+    }
+    
+    /**
+     * Calculates the aggregate scores for all practices in this objective.
+     * --- BUGFIX v1.4 ---
+     * This logic now correctly checks for null scores.
+     */
+    calculateScores() {
+        let totalScore = 0;
+        let totalMax = 0;
+        let totalAssessed = 0;
+        let totalPractices = this.practices.length;
+        
+        for (const practice of this.practices) {
+            const currentScore = practice.parseScore(practice.score);
+            const maxScore = parseInt(practice.max, 10) || 0;
+
+            totalMax += maxScore;
+
+            if (currentScore !== null) {
+                totalAssessed++;
+                totalScore += currentScore;
+            }
+        }
+        
+        const percent = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
+        const assessmentCompletion = totalPractices > 0 ? (totalAssessed / totalPractices) * 100 : 0;
+        
+        return {
+            totalScore,
+            totalMax,
+            totalAssessed,
+            totalPractices,
+            percent,
+            assessmentCompletion
+        };
+    }
+
+    /**
+     * Groups practices by their CTI maturity level.
+     */
+    getPracticesByMaturity() {
+        const groups = { 'CTI 1': [], 'CTI 2': [], 'CTI 3': [], 'Other': [] };
+        
+        for (const practice of this.practices) {
+            let maturityKey = (practice.maturity || '').replace(/\s+/g, ' ').toUpperCase();
+            if (maturityKey.startsWith('CTI1')) maturityKey = 'CTI 1';
+            else if (maturityKey.startsWith('CTI2')) maturityKey = 'CTI 2';
+            else if (maturityKey.startsWith('CTI3')) maturityKey = 'CTI 3';
+            else maturityKey = 'Other';
+            
+            groups[maturityKey].push(practice);
+        }
+        return groups;
+    }
+}
+
+/**
+ * Represents a Domain, which contains Objectives.
+ * This is the top-level model for each domain.
+ */
+class Domain {
+    id;
+    name; // The full "nan" name from the source
+    nickname;
+    max;
+    objectives = []; // This will be an array of Objective instances
+
+    // --- User Data (with defaults) ---
+    date = '';
+    relevant = true;
+
+    constructor(staticDomain, objectivesData) {
+        this.id = staticDomain.id;
+        this.name = staticDomain.name;
+        this.nickname = staticDomain.nickname;
+        this.max = staticDomain.max;
+
+        // Build Objective instances
+        if (objectivesData) {
+            const objectiveKeys = Object.keys(objectivesData).sort();
+            this.objectives = objectiveKeys.map(key => new Objective(objectivesData[key]));
+        }
+    }
+    
+    loadUserData(savedDomain) {
+        if (savedDomain.date !== undefined) this.date = savedDomain.date;
+        if (savedDomain.relevant !== undefined) this.relevant = savedDomain.relevant;
+
+        const objectiveMap = new Map();
+        if (savedDomain.objectives) {
+            savedDomain.objectives.forEach(oData => objectiveMap.set(oData.id, oData));
+        }
+
+        for (const objective of this.objectives) {
+            const savedObjective = objectiveMap.get(objective.id);
+            if (savedObjective) {
+                objective.loadUserData(savedObjective);
+            }
+        }
+    }
+
+    serialize() {
+        return {
+            // We don't need to save the ID, as it will be the
+            // key in the top-level assessmentData object.
+            date: this.date,
+            relevant: this.relevant,
+            objectives: this.objectives.map(o => o.serialize())
+        };
+    }
+    
+    /**
+     * Finds a practice instance by its ID within this domain.
+     */
+    getPracticeById(practiceId) {
+        for (const objective of this.objectives) {
+            for (const practice of objective.practices) {
+                if (practice.id === practiceId) {
+                    return { practice, objective };
+                }
+            }
+        }
+        return { practice: null, objective: null };
+    }
+    
+    /**
+     * Calculates the aggregate scores for all practices in this domain.
+     * --- BUGFIX v1.4 ---
+     * This logic now correctly checks for null scores, especially for totalTargetScore.
+     */
+    calculateScores() {
+        let totalScore = 0;
+        let totalMax = 0;
+        let totalTargetScore = 0;
+        let totalAssessed = 0;
+        let totalPractices = 0;
+
+        for (const objective of this.objectives) {
+            for (const practice of objective.practices) {
+                totalPractices++;
+                
+                // Get the raw scores, not the "calculated" ones from getScores()
+                const currentScore = practice.parseScore(practice.score);
+                const targetScore = practice.parseScore(practice.targetScore);
+                const maxScore = parseInt(practice.max, 10) || 0;
+                
+                totalMax += maxScore;
+
+                if (currentScore !== null) {
+                    totalAssessed++;
+                    totalScore += currentScore;
+                }
+                
+                // Only add to target total if a target has been explicitly set
+                if (targetScore !== null) {
+                    totalTargetScore += targetScore;
+                }
+            }
+        }
+        
+        const percent = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
+        const targetPercent = totalMax > 0 ? (totalTargetScore / totalMax) * 100 : 0;
+        const assessmentCompletion = totalPractices > 0 ? (totalAssessed / totalPractices) * 100 : 0;
+        
+        return { 
+            relevant: this.relevant, 
+            totalScore, 
+            totalMax, 
+            percent, 
+            totalTargetScore, 
+            targetPercent, 
+            assessmentCompletion, 
+            totalAssessed, 
+            totalPractices 
+        };
+    }
+}
+
+
+// ========================================================================
+// === CTI-CMM APPLICATION MODULE =========================================
+// ========================================================================
+
     /**
      * CTI-CMM Assessment Tool Application Module.
      * Encapsulates all application logic to prevent global scope pollution.
@@ -445,6 +777,7 @@
         'use strict';
 
         // --- 1. Constants ---
+        const CURRENT_TOOL_VERSION = '1.5';
         const STORAGE_KEY = 'ctiCmmAssessmentData';
         const MODE_STORAGE_KEY = 'ctiCmmAppMode';
         const VIEW_STORAGE_KEY = 'ctiCmmAppView'; 
@@ -480,7 +813,10 @@
         // --- 2. Application State ---
         // Private state for the entire application
         let state = {
-            assessmentData: {},
+            /**
+             * @type {Object<string, Domain>}
+             */
+            assessmentData: {}, // This will hold { "ASSET": Domain, "THREAT": Domain, ... }
             appMode: 'benchmark', // 'benchmark' or 'planning'
             prioritySort: { column: 'priority', direction: 'desc' },
             activePage: 'home',
@@ -548,110 +884,6 @@
             },
 
             /**
-             * Finds a practice object in the state by its ID.
-             */
-            getPracticeById(practiceId) {
-                for (const domainKey in state.assessmentData) {
-                    const domain = state.assessmentData[domainKey];
-                    if (domain.objectives) {
-                        for (const objective of domain.objectives) {
-                            const practice = objective.practices.find(p => p.id === practiceId);
-                            if (practice) {
-                                return { practice, domainId: domainKey, objective };
-                            }
-                        }
-                    }
-                }
-                return { practice: null, domainId: null, objective: null };
-            },
-
-            getStatusFromScore(score) {
-                score = utils.parseScore(score);
-                if (score === null) return "Not Assessed";
-
-                switch (score) {
-                    case 0: return "Not Implemented";
-                    case 1: return "Partially Implemented";
-                    case 2: return "Largely Implemented";
-                    case 3: return "Fully Implemented";
-                    default: return "Not Assessed";
-                }
-            },
-
-            /**
-             * Calculates the priority score.
-             */
-            calculatePriority(impact, loe) {
-                const impactVal = parseInt(impact, 10);
-                const loeVal = parseInt(loe, 10);
-                if (!impactVal || !loeVal || impactVal < 1 || loeVal < 1) {
-                    return "-"; // Use a dash for unset
-                }
-                return impactVal + (4 - loeVal); // Formula: Impact + (4 - LOE)
-            },
-
-            /**
-             * Simple deep merge helper to combine default and saved data.
-             */
-            deepMerge(target, source) {
-                const isObject = (obj) => obj && typeof obj === 'object' && !Array.isArray(obj);
-                let output = Object.assign({}, target);
-                if (isObject(target) && isObject(source)) {
-                    Object.keys(source).forEach(key => {
-                        if (isObject(source[key]) && !Array.isArray(source[key])) {
-                            if (!(key in target))
-                                Object.assign(output, { [key]: source[key] });
-                            else
-                                output[key] = utils.deepMerge(target[key], source[key]);
-                        } else {
-                            Object.assign(output, { [key]: source[key] });
-                        }
-                    });
-                }
-                return output;
-            },
-
-            /**
-             * Calculates all scores for a single domain.
-             */
-            calculateDomainScores(domainId) {
-                const domain = state.assessmentData[domainId];
-                const relevant = (domain && domain.relevant !== false); // Default to true
-                
-                let totalScore = 0;
-                let totalMax = 0;
-                let totalTargetScore = 0;
-                let totalAssessed = 0;
-                let totalPractices = 0;
-                
-                if (domain && domain.objectives) {
-                    for (const objective of domain.objectives) {
-                        for (const practice of objective.practices) {
-                            totalPractices++;
-                            const currentScore = utils.parseScore(practice.score);
-                            const targetScore = utils.parseScore(practice.targetScore);
-
-                            if (currentScore !== null) {
-                                totalAssessed++;
-                                totalScore += currentScore;
-                            }
-                            if (targetScore !== null) {
-                                totalTargetScore += targetScore;
-                            }
-                            
-                            totalMax += parseInt(practice.max, 10) || 0;
-                        }
-                    }
-                }
-                
-                const percent = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
-                const targetPercent = totalMax > 0 ? (totalTargetScore / totalMax) * 100 : 0;
-                const assessmentCompletion = totalPractices > 0 ? (totalAssessed / totalPractices) * 100 : 0;
-                
-                return { relevant, totalScore, totalMax, percent, totalTargetScore, targetPercent, assessmentCompletion, totalAssessed, totalPractices };
-            },
-
-            /**
              * Calculates scores for all domains and totals.
              */
             calculateAllScores() {
@@ -661,8 +893,10 @@
                 let grandTotalAssessed = 0;
                 let grandTotalPractices = 0; // Only count practices from relevant domains
 
-                const domainScores = window.CMM_DATA.domains.map(domain => {
-                    const scores = utils.calculateDomainScores(domain.id);
+                const domainScores = window.CMM_DATA.domains.map(domainData => {
+                    const domainInstance = state.assessmentData[domainData.id];
+                    const scores = domainInstance.calculateScores();
+                    
                     if (scores.relevant) { // Only add to totals if relevant
                         grandTotalScore += scores.totalScore;
                         grandTotalMax += scores.totalMax;
@@ -670,7 +904,8 @@
                         grandTotalAssessed += scores.totalAssessed;
                         grandTotalPractices += scores.totalPractices;
                     }
-                    return { ...domain, ...scores }; // Return all scores for dashboard table
+                    // Combine static data (nickname) with calculated scores
+                    return { ...domainData, ...scores }; 
                 });
 
                 const overallPercent = grandTotalMax > 0 ? (grandTotalScore / grandTotalMax) * 100 : 0;
@@ -698,6 +933,14 @@
                     return '""';
                 }
                 let result = String(str);
+                
+                // --- SECURE MODIFICATION: Prevent CSV Injection ---
+                // Prepend a single quote if the string starts with a formula character
+                if (['=', '+', '-', '@'].includes(result.charAt(0))) {
+                    result = "'" + result;
+                }
+                // --- END MODIFICATION ---
+
                 if (result.includes('"') || result.includes(',') || result.includes('\n')) {
                     result = result.replace(/"/g, '""'); // Escape quotes
                     result = `"${result}"`; // Wrap in quotes
@@ -711,53 +954,28 @@
         // Functions that mutate state and handle persistence
         const store = {
             /**
+             * Finds a Practice instance by its ID from anywhere in the state.
+             */
+            getPracticeInstanceById(practiceId) {
+                for (const domainKey in state.assessmentData) {
+                    const domain = state.assessmentData[domainKey];
+                    const { practice, objective } = domain.getPracticeById(practiceId);
+                    if (practice) {
+                        return { practice, domain, objective };
+                    }
+                }
+                return { practice: null, domain: null, objective: null };
+            },
+
+            /**
              * Gets the user-editable data object, ready for saving or exporting.
+             * This is now just a loop that calls .serialize() on each Domain instance.
              */
             getUserDataForSave() {
                 const dataToSave = {}; 
-                
-                // Iterate over each domain in the current state
                 for (const domainId in state.assessmentData) {
-                    if (state.assessmentData.hasOwnProperty(domainId)) {
-                        const domainState = state.assessmentData[domainId];
-                        
-                        // Initialize the domain in our save object
-                        dataToSave[domainId] = {
-                            // Save domain-level user data
-                            date: domainState.date,
-                            relevant: domainState.relevant,
-                            // We need to store objectives, but only with practice data
-                            objectives: [] 
-                        };
-
-                        // Iterate over objectives
-                        domainState.objectives.forEach(objectiveState => {
-                            const objectiveToSave = {
-                                id: objectiveState.id, // Need ID to merge later
-                                practices: []
-                            };
-
-                            // Iterate over practices and extract user data
-                            objectiveState.practices.forEach(practiceState => {
-                                // This is the user-data-only object
-                                const practiceToSave = {
-                                    id: practiceState.id, // Need ID to merge later
-                                    score: practiceState.score,
-                                    targetScore: practiceState.targetScore,
-                                    impact: practiceState.impact,
-                                    loe: practiceState.loe,
-                                    evidence: practiceState.evidence,
-                                    poc: practiceState.poc,
-                                    targetDate: practiceState.targetDate,
-                                    notes: practiceState.notes
-                                    // We deliberately DO NOT save: text, slug, maturity, max, etc.
-                                };
-                                objectiveToSave.practices.push(practiceToSave);
-                            });
-                            
-                            dataToSave[domainId].objectives.push(objectiveToSave);
-                        });
-                    }
+                    const domainInstance = state.assessmentData[domainId];
+                    dataToSave[domainId] = domainInstance.serialize();
                 }
                 return dataToSave;
             },
@@ -767,7 +985,6 @@
              */
             saveState() {
                 try {
-                    // Use the new helper function
                     const dataToSave = store.getUserDataForSave();
                     const savedString = JSON.stringify(dataToSave);
                     localStorage.setItem(STORAGE_KEY, savedString);
@@ -803,6 +1020,7 @@
 
             /**
              * Loads all data and mode from localStorage into the state.
+             * This is now refactored to use the Domain class .loadUserData() method.
              */
             loadState() {
                 // Load app mode
@@ -823,15 +1041,19 @@
                     state.assessmentName = '';
                 }
                 
-                // 1. Get the fresh, authoritative data structure
-                const defaultData = store.getDefaultAssessmentData();
+                // 1. Get the fresh, authoritative class instances
+                state.assessmentData = store.getDefaultAssessmentData();
                 
                 // 2. Load the user's saved progress
                 let userProgress = {};
                 try {
                     const savedData = localStorage.getItem(STORAGE_KEY);
                     if (savedData) {
-                        userProgress = JSON.parse(savedData);
+                        // Use a reviver to prevent prototype pollution
+                        userProgress = JSON.parse(savedData, (key, value) => {
+                            if (key === '__proto__') return undefined;
+                            return value;
+                        });
                         console.log('User progress loaded.');
                     } else {
                         console.log('No saved data found.');
@@ -841,108 +1063,37 @@
                     userProgress = {};
                 }
 
-                // 3. Manually merge userProgress *into* defaultData
-                // We will modify defaultData in-place and then assign it to state
-                for (const domainId in defaultData) {
-                    if (userProgress[domainId]) {
-                        const userDomain = userProgress[domainId];
-                        const defaultDomain = defaultData[domainId];
-
-                        // Merge domain-level fields
-                        if (userDomain.date !== undefined) defaultDomain.date = userDomain.date;
-                        if (userDomain.relevant !== undefined) defaultDomain.relevant = userDomain.relevant;
-
-                        // Create a map of user practices for easy lookup
-                        const userPracticeMap = new Map();
-                        if (userDomain.objectives) {
-                            userDomain.objectives.forEach(userObj => {
-                                if (userObj.practices) {
-                                    userObj.practices.forEach(userPractice => {
-                                        userPracticeMap.set(userPractice.id, userPractice);
-                                    });
-                                }
-                            });
-                        }
-                        
-                        // Iterate default structure and apply user data
-                        if (defaultDomain.objectives) {
-                            defaultDomain.objectives.forEach(defaultObj => {
-                                if (defaultObj.practices) {
-                                    defaultObj.practices.forEach(defaultPractice => {
-                                        const userPractice = userPracticeMap.get(defaultPractice.id);
-                                        if (userPractice) {
-                                            // Apply saved user data
-                                            defaultPractice.score = userPractice.score;
-                                            defaultPractice.targetScore = userPractice.targetScore;
-                                            defaultPractice.impact = userPractice.impact;
-                                            defaultPractice.loe = userPractice.loe;
-                                            defaultPractice.evidence = userPractice.evidence;
-                                            defaultPractice.poc = userPractice.poc;
-                                            defaultPractice.targetDate = userPractice.targetDate;
-                                            defaultPractice.notes = userPractice.notes;
-                                        }
-                                    });
-                                }
-                            });
-                        }
+                // 3. Manually merge userProgress *into* the class instances
+                // This is now clean, just tell each domain instance to load its data.
+                for (const domainId in state.assessmentData) {
+                    const domainInstance = state.assessmentData[domainId];
+                    const userDomainData = userProgress[domainId];
+                    if (domainInstance && userDomainData) {
+                        domainInstance.loadUserData(userDomainData);
                     }
                 }
                 
-                // 4. The merge is complete. Set the state.
-                state.assessmentData = defaultData;
-                console.log('Assessment data loaded and merged.');
+                console.log('Assessment data loaded and merged into class instances.');
             },
 
             /**
              * Builds the initial state from the loaded CMM_DATA.
+             * This now creates and returns a map of Domain instances.
              */
             getDefaultAssessmentData() {
+                /** @type {Object<string, Domain>} */
                 const defaultData = {};
                 
-                window.CMM_DATA.domains.forEach(domain => {
-                    const domainId = domain.id;
+                window.CMM_DATA.domains.forEach(staticDomain => {
+                    const domainId = staticDomain.id;
                     const objectivesFromData = window.CMM_DATA.objectives[domainId];
-                    const newObjectivesArray = [];
-
-                    if (objectivesFromData) {
-                        const objectiveKeys = Object.keys(objectivesFromData).sort();
-                        for (const objectiveKey of objectiveKeys) {
-                            const objectiveData = objectivesFromData[objectiveKey];
-                            
-                            // Deep copy practices and set default scores to null
-                            const defaultPractices = JSON.parse(JSON.stringify(objectiveData.practices)).map(p => ({
-                                ...p,
-                                score: null,
-                                targetScore: null,
-                                impact: 1, // Default to 1-Low
-                                loe: 1,    // Default to 1-Low
-                                evidence: '',
-                                poc: '',
-                                targetDate: '',
-                                notes: ''
-                            }));
-
-                            newObjectivesArray.push({
-                                id: objectiveData.id,
-                                name: objectiveData.name,
-                                practices: defaultPractices
-                            });
-                        }
-                    }
-
-                    defaultData[domainId] = {
-                        date: '',
-                        relevant: true,
-                        objectives: newObjectivesArray
-                    };
+                    
+                    // Create a new Domain instance which will in turn
+                    // create all its Objective and Practice instances.
+                    defaultData[domainId] = new Domain(staticDomain, objectivesFromData);
                 });
                 
-                try {
-                    return defaultData;
-                } catch (e) {
-                    console.error("Failed to build default data:", e);
-                    return {}; // Fallback
-                }
+                return defaultData;
             },
 
             /**
@@ -963,11 +1114,12 @@
              * Updates a field for a specific practice and saves the state.
              */
             updatePracticeField(practiceId, field, value) {
-                const { practice, domainId, objective } = utils.getPracticeById(practiceId);
+                const { practice, domain, objective } = store.getPracticeInstanceById(practiceId);
                 if (practice) {
+                    // Update the property on the class instance
                     practice[field] = value;
                     store.saveState();
-                    return { practice, domainId, objective }; // Return context
+                    return { practice, domain, objective }; // Return context
                 }
                 return null;
             },
@@ -976,8 +1128,9 @@
              * Updates a metadata field for a domain (e.g., date, relevant) and saves.
              */
             updateDomainMeta(domainId, field, value) {
-                if (state.assessmentData[domainId]) {
-                    state.assessmentData[domainId][field] = value;
+                const domainInstance = state.assessmentData[domainId];
+                if (domainInstance) {
+                    domainInstance[field] = value;
                     store.saveState();
                     return true;
                 }
@@ -1028,7 +1181,7 @@
                 
                 // === NEW CODE: Update Browser History ===
                 if (!fromPopState) {
-                    const state = { page: pageId, domain: domainId };
+                    const stateObj = { page: pageId, domain: domainId };
                     let title = "CTI-CMM Assessment Tool";
                     let url = window.location.pathname; // Get base path (e.g., /index.html)
 
@@ -1042,10 +1195,9 @@
                     }
                     
                     // Only push state if the URL is actually different
-                    // (prevents duplicate history entries on redundant clicks)
                     const fullUrl = window.location.origin + url;
                     if (fullUrl !== window.location.href) {
-                         window.history.pushState(state, title, url);
+                         window.history.pushState(stateObj, title, url);
                     }
                     document.title = title; // Also update the document title
                 } else {
@@ -1119,6 +1271,7 @@
                 domainScores.forEach(domain => {
                     const domainName = DOMAIN_NAME_MAP[domain.id] || domain.nickname;
                     const rowClass = domain.relevant ? "hover:bg-slate-50" : "hover:bg-slate-50 opacity-50 line-through";
+                    // SECURE: All data here is either from our own map or a calculation.
                     const row = `
                         <tr class="${rowClass}">
                             <td class="py-4 px-6 text-sm font-medium text-slate-900">${domainName}</td>
@@ -1225,23 +1378,23 @@
 
             /**
              * Renders the main assessment page for a given domain.
+             * SECURE: Uses .textContent for all untrusted data (slug, text).
              */
             renderAssessmentPage(domainId) {
-                const domain = window.CMM_DATA.domains.find(d => d.id === domainId);
-                const domainData = state.assessmentData[domainId];
-                if (!domain || !domainData) {
-                    console.error('Domain not found:', domainId);
+                const domain = state.assessmentData[domainId];
+                if (!domain) {
+                    console.error('Domain instance not found:', domainId);
                     return;
                 }
 
                 dom.assessmentTitle.textContent = DOMAIN_NAME_MAP[domain.id] || domain.nickname;
-                dom.assessmentDate.value = domainData.date;
-                dom.assessmentRelevant.checked = domainData.relevant;
+                dom.assessmentDate.value = domain.date;
+                dom.assessmentRelevant.checked = domain.relevant;
                 
                 view.updateAssessmentSummary(domainId); // Render summary
 
                 // Handle relevance toggle
-                if (domainData.relevant) {
+                if (domain.relevant) {
                     dom.assessmentObjectivesContainer.classList.remove('content-disabled');
                     dom.assessmentDisabledBanner.classList.add('hidden');
                 } else {
@@ -1251,42 +1404,18 @@
                 
                 dom.assessmentObjectivesContainer.innerHTML = ''; // Clear old data
 
-                domainData.objectives.forEach((objective) => {
+                domain.objectives.forEach((objective) => {
                     const details = document.createElement('details');
                     details.className = "bg-white rounded-lg shadow-md overflow-hidden";
                     details.open = true; // Open by default
                     
                     const summary = document.createElement('summary');
                     summary.className = "cursor-pointer bg-slate-100 p-4 font-semibold text-lg hover:bg-slate-200 flex justify-between";
-                    summary.textContent = objective.name; 
+                    summary.textContent = objective.name; // Safe (from our class)
                     details.appendChild(summary);
 
-                    let objTotalScore = 0, objTotalMax = 0, objTotalAssessed = 0, objTotalPractices = 0;
-
                     // Group practices by maturity
-                    const practicesByMaturity = { 'CTI 1': [], 'CTI 2': [], 'CTI 3': [] };
-                    
-                    objective.practices.forEach(practice => {
-                        objTotalPractices++;
-                        const currentScore = utils.parseScore(practice.score);
-                        if (currentScore !== null) {
-                            objTotalAssessed++;
-                            objTotalScore += currentScore;
-                        }
-                        objTotalMax += parseInt(practice.max, 10) || 0;
-                        
-                        let maturityKey = practice.maturity.replace(/\s+/g, ' ').toUpperCase();
-                        if (maturityKey.startsWith('CTI1')) maturityKey = 'CTI 1';
-                        if (maturityKey.startsWith('CTI2')) maturityKey = 'CTI 2';
-                        if (maturityKey.startsWith('CTI3')) maturityKey = 'CTI 3';
-                        
-                        if (practicesByMaturity.hasOwnProperty(maturityKey)) {
-                            practicesByMaturity[maturityKey].push(practice);
-                        } else {
-                            if (!practicesByMaturity['Other']) practicesByMaturity['Other'] = [];
-                            practicesByMaturity['Other'].push(practice);
-                        }
-                    });
+                    const practicesByMaturity = objective.getPracticesByMaturity();
 
                     const maturityGroupsContainer = document.createElement('div');
                     maturityGroupsContainer.className = "p-4 space-y-4";
@@ -1316,12 +1445,23 @@
                             // Row 1: Practice Info
                             const rowInfo = document.createElement('tr');
                             rowInfo.className = "bg-slate-50";
-                            rowInfo.innerHTML = `
-                                <td colspan="5" class="pt-4 pb-2 px-4 border-b-0">
-                                    <div class="font-semibold text-slate-800">${practice.slug}</div>
-                                    <div class="text-slate-600 mt-1">${practice.text}</div>
-                                </td>
-                            `;
+                            // --- SECURE MODIFICATION: Use .textContent for untrusted data ---
+                            const cellInfo = document.createElement('td');
+                            cellInfo.colSpan = 5;
+                            cellInfo.className = "pt-4 pb-2 px-4 border-b-0";
+
+                            const slugDiv = document.createElement('div');
+                            slugDiv.className = "font-semibold text-slate-800";
+                            slugDiv.textContent = practice.slug; // Safe
+                            cellInfo.appendChild(slugDiv);
+
+                            const textDiv = document.createElement('div');
+                            textDiv.className = "text-slate-600 mt-1";
+                            textDiv.textContent = practice.text; // Safe
+                            cellInfo.appendChild(textDiv);
+                            
+                            rowInfo.appendChild(cellInfo);
+                            // --- END MODIFICATION ---
                             tbody.appendChild(rowInfo);
 
                             // Row 2: Top Widgets
@@ -1409,7 +1549,8 @@
                                 const priorityDisplay = document.createElement('div');
                                 priorityDisplay.className = "p-1 font-bold text-slate-700 text-lg text-left";
                                 priorityDisplay.dataset.priorityId = practice.id;
-                                priorityDisplay.textContent = utils.calculatePriority(practice.impact, practice.loe);
+                                // Use the class method to calculate
+                                priorityDisplay.textContent = practice.calculatePriority();
                                 cellPriority.appendChild(priorityDisplay);
                                 rowWidgets2.appendChild(cellPriority);
                                 
@@ -1425,8 +1566,15 @@
                     details.appendChild(maturityGroupsContainer);
 
                     // Add the subtotal element
-                    const objPercent = objTotalMax > 0 ? (objTotalScore / objTotalMax) * 100 : 0;
-                    const objCompletion = objTotalPractices > 0 ? (objTotalAssessed / objTotalPractices) * 100 : 0;
+                    const { 
+                        totalScore: objTotalScore, 
+                        totalMax: objTotalMax,
+                        totalAssessed: objTotalAssessed,
+                        totalPractices: objTotalPractices,
+                        percent: objPercent,
+                        assessmentCompletion: objCompletion
+                    } = objective.calculateScores();
+                    
                     const subtotalEl = document.createElement('div');
                     subtotalEl.className = "bg-slate-50 p-4 font-bold text-sm flex justify-end space-x-6 border-t border-slate-200";
                     subtotalEl.dataset.objectiveId = objective.name; // For live updates
@@ -1442,6 +1590,7 @@
 
             /**
              * Renders the priorities planning sheet.
+             * SECURE: Uses .textContent for all user data (practice slug, notes, etc.)
              */
             renderPrioritiesPage() {
                 dom.prioritiesTableBody.innerHTML = ''; // Clear old data
@@ -1451,8 +1600,6 @@
                     const domain = state.assessmentData[domainId];
                     if (domain.relevant === false) continue; // Skip irrelevant
                     
-                    const domainMeta = window.CMM_DATA.domains.find(d => d.id === domainId);
-                    
                     domain.objectives.forEach(objective => {
                         objective.practices.forEach(practice => {
                             const currentScore = utils.parseScore(practice.score);
@@ -1461,11 +1608,8 @@
                             // Only include items where target is set and (current is null or target > current)
                             if (targetScore !== null && (currentScore === null || targetScore > currentScore)) {
                                 priorityItems.push({
-                                    domain: domainMeta ? domainMeta.nickname : domainId,
-                                    objective: objective.name,
-                                    practice: practice.slug,
-                                    date: practice.targetDate,
-                                    ...practice
+                                    domainNickname: domain.nickname,
+                                    practice: practice // Pass the whole instance
                                 });
                             }
                         });
@@ -1475,37 +1619,44 @@
                 // Sort items based on the global prioritySort state
                 priorityItems.sort((a, b) => {
                     const col = state.prioritySort.column;
+                    const pA = a.practice;
+                    const pB = b.practice;
                     let valA, valB;
 
                     switch (col) {
                         case 'priority':
-                            valA = utils.calculatePriority(a.impact, a.loe);
-                            valB = utils.calculatePriority(b.impact, b.loe);
+                            valA = pA.calculatePriority();
+                            valB = pB.calculatePriority();
                             if (valA === '-') valA = -Infinity;
                             if (valB === '-') valB = -Infinity;
                             break;
                         case 'impact':
                         case 'loe':
-                            valA = parseInt(a[col], 10) || 0;
-                            valB = parseInt(b[col], 10) || 0;
+                            valA = parseInt(pA[col], 10) || 0;
+                            valB = parseInt(pB[col], 10) || 0;
                             break;
                         case 'score':
                         case 'target':
                             const key = col === 'target' ? 'targetScore' : col;
-                            valA = utils.parseScore(a[key]);
-                            valB = utils.parseScore(b[key]);
+                            valA = utils.parseScore(pA[key]);
+                            valB = utils.parseScore(pB[key]);
                             if (valA === null) valA = -1; // Sort nulls before 0
                             if (valB === null) valB = -1;
                             break;
                         case 'date':
-                            valA = a.targetDate || '';
-                            valB = b.targetDate || '';
+                            valA = pA.targetDate || '';
+                            valB = pB.targetDate || '';
                             if (valA === '' && valB !== '') return 1;
                             if (valA !== '' && valB === '') return -1;
                             break;
+                        case 'practice':
+                            valA = (pA.slug || '').toLowerCase();
+                            valB = (pB.slug || '').toLowerCase();
+                            break;
+                        case 'domain':
                         default:
-                            valA = (a[col] || '').toLowerCase();
-                            valB = (b[col] || '').toLowerCase();
+                            valA = (a.domainNickname || '').toLowerCase();
+                            valB = (b.domainNickname || '').toLowerCase();
                             break;
                     }
 
@@ -1522,30 +1673,56 @@
                 view.updatePrioritySortHeaders(); // Update UI
 
                 if (priorityItems.length === 0) {
-                    dom.prioritiesTableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-500">No priority items found from relevant domains. (Ensure 'Target' score is higher than 'Current' score).</td></tr>`;
+                    const row = dom.prioritiesTableBody.insertRow();
+                    const cell = row.insertCell();
+                    cell.colSpan = 9;
+                    cell.className = "p-6 text-center text-slate-500";
+                    cell.textContent = "No priority items found from relevant domains. (Ensure 'Target' score is higher than 'Current' score).";
                     return;
                 }
 
-                // Render rows
+                // --- SECURE ROW RENDERING ---
+                const fragment = document.createDocumentFragment();
                 priorityItems.forEach(item => {
-                    const priority = utils.calculatePriority(item.impact, item.loe);
-                    const row = `
-                        <tr class="hover:bg-slate-50">
-                            <td class="py-4 px-4 text-sm font-medium text-slate-900">${item.domain}</td>
-                            <td class="py-4 px-4 text-sm text-slate-700">${item.practice}</td>
-                            <td class="py-2 px-4 text-sm text-slate-500">${view.createDisplayMaturityWidget(item.score, 'current')}</td>
-                            <td class="py-2 px-4 text-sm text-slate-500">${view.createDisplayMaturityWidget(item.targetScore, 'target')}</td>
-                            <td class="py-4 px-4 text-sm text-slate-500">${item.impact || '-'}</td>
-                            <td class="py-4 px-4 text-sm text-slate-500">${item.loe || '-'}</td>
-                            <td class="py-4 px-4 text-sm text-slate-500 font-bold text-center">${priority}</td>
-                            <td class="py-4 px-4 text-sm text-slate-500">${item.targetDate}</td>
-                            <td class="py-4 px-4 text-sm text-slate-500">${(item.notes || '').substring(0, 50)}...</td>
-                        </tr>
-                    `;
-                    dom.prioritiesTableBody.innerHTML += row;
-                });
-            },
+                    const practice = item.practice;
+                    const priority = practice.calculatePriority();
+                    
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-slate-50";
 
+                    // Helper to create and append a cell with text
+                    const addTextCell = (text, classes) => {
+                        const cell = document.createElement('td');
+                        cell.className = classes;
+                        cell.textContent = text; // Use .textContent to prevent XSS
+                        row.appendChild(cell);
+                    };
+
+                    // Helper to create and append a cell with HTML
+                    const addHTMLCell = (htmlString, classes) => {
+                        const cell = document.createElement('td');
+                        cell.className = classes;
+                        cell.innerHTML = htmlString; // Safe for our own widget
+                        row.appendChild(cell);
+                    };
+
+                    addTextCell(item.domainNickname, "py-4 px-4 text-sm font-medium text-slate-900");
+                    addTextCell(practice.slug, "py-4 px-4 text-sm text-slate-700");
+                    addHTMLCell(view.createDisplayMaturityWidget(practice.score, 'current'), "py-2 px-4 text-sm text-slate-500");
+                    addHTMLCell(view.createDisplayMaturityWidget(practice.targetScore, 'target'), "py-2 px-4 text-sm text-slate-500");
+                    addTextCell(practice.impact || '-', "py-4 px-4 text-sm text-slate-500");
+                    addTextCell(practice.loe || '-', "py-4 px-4 text-sm text-slate-500");
+                    addTextCell(priority, "py-4 px-4 text-sm text-slate-500 font-bold text-center");
+                    addTextCell(practice.targetDate, "py-4 px-4 text-sm text-slate-500");
+                    
+                    const truncatedNotes = (practice.notes || '').substring(0, 50) + (practice.notes.length > 50 ? '...' : '');
+                    addTextCell(truncatedNotes, "py-4 px-4 text-sm text-slate-500");
+
+                    fragment.appendChild(row);
+                });
+                dom.prioritiesTableBody.appendChild(fragment);
+            },
+            
             // --- View Helper Functions ---
 
             createSelect(options, selectedValue, practiceId, field) {
@@ -1749,10 +1926,11 @@
              * Updates all progress bars and styling in the sidebar.
              */
             updateSidebarProgress() {
-                window.CMM_DATA.domains.forEach(domain => {
-                    const domainData = state.assessmentData[domain.id];
-                    const relevant = (domainData && domainData.relevant !== false);
-                    const { assessmentCompletion } = utils.calculateDomainScores(domain.id);
+                window.CMM_DATA.domains.forEach(domainData => {
+                    const domain = state.assessmentData[domainData.id];
+                    if (!domain) return;
+                    
+                    const { assessmentCompletion } = domain.calculateScores();
                     const percent = assessmentCompletion.toFixed(0);
                     
                     const label = document.querySelector(`[data-progress-label-domain="${domain.id}"]`);
@@ -1762,8 +1940,8 @@
                     if (label) label.textContent = `${percent}%`;
                     if (bar) bar.style.width = `${percent}%`;
                     if (navLink) {
-                        navLink.style.opacity = relevant ? '1' : '0.5';
-                        navLink.style.textDecoration = relevant ? 'none' : 'line-through';
+                        navLink.style.opacity = domain.relevant ? '1' : '0.5';
+                        navLink.style.textDecoration = domain.relevant ? 'none' : 'line-through';
                     }
                 });
             },
@@ -1772,7 +1950,10 @@
              * Updates the summary block on the assessment page.
              */
             updateAssessmentSummary(domainId) {
-                const { totalScore, totalMax, percent, assessmentCompletion } = utils.calculateDomainScores(domainId);
+                const domain = state.assessmentData[domainId];
+                if (!domain) return;
+                
+                const { totalScore, totalMax, percent, assessmentCompletion } = domain.calculateScores();
                 
                 dom.assessmentSummary.innerHTML = `
                     <span class="font-bold">Domain Score:</span> ${totalScore} / ${totalMax}
@@ -1809,21 +1990,15 @@
             updateObjectiveSubtotal(objective) {
                 const subtotalEl = document.querySelector(`div[data-objective-id="${objective.name}"]`);
                 if (!subtotalEl) return;
-
-                let objTotalScore = 0, objTotalMax = 0, objTotalAssessed = 0, objTotalPractices = 0;
                 
-                objective.practices.forEach(practice => {
-                    objTotalPractices++;
-                    const currentScore = utils.parseScore(practice.score);
-                    if (currentScore !== null) {
-                        objTotalAssessed++;
-                        objTotalScore += currentScore;
-                    }
-                    objTotalMax += parseInt(practice.max, 10) || 0;
-                });
-                
-                const objPercent = objTotalMax > 0 ? (objTotalScore / objTotalMax) * 100 : 0;
-                const objCompletion = objTotalPractices > 0 ? (objTotalAssessed / objTotalPractices) * 100 : 0;
+                const { 
+                    totalScore: objTotalScore, 
+                    totalMax: objTotalMax,
+                    totalAssessed: objTotalAssessed,
+                    totalPractices: objTotalPractices,
+                    percent: objPercent,
+                    assessmentCompletion: objCompletion
+                } = objective.calculateScores();
                 
                 subtotalEl.innerHTML = `
                     <span class="font-semibold">Section Subtotal:</span>
@@ -1851,13 +2026,11 @@
             exportPrioritiesToCSV() {
                 console.log('Exporting priorities to CSV...');
                 
-                // 1. Get Data (uses the same logic as renderPrioritiesPage)
+                // 1. Get Data
                 let priorityItems = [];
                 for (const domainId in state.assessmentData) {
                     const domain = state.assessmentData[domainId];
                     if (domain.relevant === false) continue;
-                    
-                    const domainMeta = window.CMM_DATA.domains.find(d => d.id === domainId);
                     
                     domain.objectives.forEach(objective => {
                         objective.practices.forEach(practice => {
@@ -1866,11 +2039,8 @@
                             
                             if (targetScore !== null && (currentScore === null || targetScore > currentScore)) {
                                 priorityItems.push({
-                                    domain: domainMeta ? domainMeta.nickname : domainId,
-                                    objective: objective.name,
-                                    practice: practice.slug,
-                                    date: practice.targetDate,
-                                    ...practice
+                                    domainNickname: domain.nickname,
+                                    practice: practice
                                 });
                             }
                         });
@@ -1880,35 +2050,42 @@
                 // 2. Sort Data (using the same logic as renderPrioritiesPage)
                 priorityItems.sort((a, b) => {
                     const col = state.prioritySort.column;
+                    const pA = a.practice;
+                    const pB = b.practice;
                     let valA, valB;
-                    // (Sorting logic is identical to renderPrioritiesPage)
+
                     switch (col) {
                         case 'priority':
-                            valA = utils.calculatePriority(a.impact, a.loe);
-                            valB = utils.calculatePriority(b.impact, b.loe);
+                            valA = pA.calculatePriority();
+                            valB = pB.calculatePriority();
                             if (valA === '-') valA = -Infinity;
                             if (valB === '-') valB = -Infinity;
                             break;
                         case 'impact': case 'loe':
-                            valA = parseInt(a[col], 10) || 0;
-                            valB = parseInt(b[col], 10) || 0;
+                            valA = parseInt(pA[col], 10) || 0;
+                            valB = parseInt(pB[col], 10) || 0;
                             break;
                         case 'score': case 'target':
                             const key = col === 'target' ? 'targetScore' : col;
-                            valA = utils.parseScore(a[key]);
-                            valB = utils.parseScore(b[key]);
+                            valA = utils.parseScore(pA[key]);
+                            valB = utils.parseScore(pB[key]);
                             if (valA === null) valA = -1;
                             if (valB === null) valB = -1;
                             break;
                         case 'date':
-                            valA = a.targetDate || '';
-                            valB = b.targetDate || '';
+                            valA = pA.targetDate || '';
+                            valB = pB.targetDate || '';
                             if (valA === '' && valB !== '') return 1;
                             if (valA !== '' && valB === '') return -1;
                             break;
+                        case 'practice':
+                            valA = (pA.slug || '').toLowerCase();
+                            valB = (pB.slug || '').toLowerCase();
+                            break;
+                        case 'domain':
                         default:
-                            valA = (a[col] || '').toLowerCase();
-                            valB = (b[col] || '').toLowerCase();
+                            valA = (a.domainNickname || '').toLowerCase();
+                            valB = (b.domainNickname || '').toLowerCase();
                             break;
                     }
                     let result = (typeof valA === 'number' && typeof valB === 'number') ? (valA - valB) : String(valA).localeCompare(String(valB));
@@ -1920,18 +2097,20 @@
                 let csvContent = headers.join(',') + '\n';
 
                 priorityItems.forEach(item => {
-                    const priority = utils.calculatePriority(item.impact, item.loe);
+                    const practice = item.practice;
+                    const priority = practice.calculatePriority();
                     const row = [
-                        item.domain,
-                        item.practice,
-                        utils.parseScore(item.score) === null ? '' : item.score,
-                        utils.parseScore(item.targetScore) === null ? '' : item.targetScore,
-                        item.impact || '',
-                        item.loe || '',
+                        item.domainNickname,
+                        practice.slug,
+                        utils.parseScore(practice.score) === null ? '' : practice.score,
+                        utils.parseScore(practice.targetScore) === null ? '' : practice.targetScore,
+                        practice.impact || '',
+                        practice.loe || '',
                         priority,
-                        item.targetDate || '',
-                        item.notes || ''
+                        practice.targetDate || '',
+                        practice.notes || ''
                     ];
+                    // Use the secure escapeCSV function
                     csvContent += row.map(utils.escapeCSV).join(',') + '\n';
                 });
 
@@ -1954,19 +2133,23 @@
 
             /**
              * Gathers all user data, builds a JSON file, and triggers a download.
+             * This now includes versioning information.
              */
             exportResultsToJSON() {
                 console.log('Exporting results to JSON...');
                 
                 // 1. Get data
-                const userData = store.getUserDataForSave(); // Use the refactored helper
-                const toolVersionEl = document.querySelector('h1 + span.text-slate-400');
-                const toolVersion = toolVersionEl ? toolVersionEl.textContent.split(' ')[1] : '1.2';
+                const userData = store.getUserDataForSave();
+                
+                // NOTE: In a real app, you would pre-calculate this hash
+                // when the cti-cmm-data.json file is built/deployed.
+                const modelHash = "placeholder-sha256-of-cti-cmm-data.json";
 
                 const exportData = {
                     assessmentName: state.assessmentName,
                     exportDate: new Date().toISOString(),
-                    toolVersion: toolVersion,
+                    toolVersion: CURRENT_TOOL_VERSION,
+                    modelHash: modelHash, 
                     data: userData
                 };
                 
@@ -2084,16 +2267,24 @@
                         if (field === 'impact' || field === 'loe') {
                             const priorityDisplay = document.querySelector(`[data-priority-id="${context.practice.id}"]`);
                             if (priorityDisplay) {
-                                priorityDisplay.textContent = utils.calculatePriority(context.practice.impact, context.practice.loe);
+                                // Use the class method to update
+                                priorityDisplay.textContent = context.practice.calculatePriority();
                             }
                         }
-                        view.updateAssessmentSummary(state.activeDomain);
+                        // Recalculate and update summaries
+                        if (context.domain) {
+                            view.updateAssessmentSummary(context.domain.id);
+                        }
                         if (context.objective) {
                             view.updateObjectiveSubtotal(context.objective);
                         }
                         // Refresh priorities if a planning field changed
                         if (state.activePage === 'priorities' && ['targetScore', 'impact', 'loe', 'targetDate'].includes(field)) {
                             view.renderPrioritiesPage();
+                        }
+                        // Refresh dashboard if a score changed
+                        if (state.activePage === 'dashboard' && (field === 'score' || field === 'targetScore')) {
+                            view.renderDashboardPage();
                         }
                     }
                     return;
@@ -2136,7 +2327,7 @@
                 const field = dot.dataset.field;
                 if (!field) return;
 
-                const { practice } = utils.getPracticeById(practiceId);
+                const { practice } = store.getPracticeInstanceById(practiceId);
                 if (!practice) return;
 
                 // Toggle null/value
@@ -2147,7 +2338,9 @@
                 if (context) {
                     // Update UI
                     view.updateDotWidget(widget, finalScore);
-                    view.updateAssessmentSummary(state.activeDomain);
+                    if (context.domain) {
+                        view.updateAssessmentSummary(context.domain.id);
+                    }
                     if (context.objective) {
                         view.updateObjectiveSubtotal(context.objective);
                     }
@@ -2209,7 +2402,7 @@
             },
 
             /**
-             * Handles the file import selection.
+             * Handles the file import selection, now with version checking.
              */
             handleImportChange(e) {
                 const file = e.target.files[0];
@@ -2220,12 +2413,38 @@
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     try {
-                        const importedData = JSON.parse(event.target.result);
+                        // --- SECURE MODIFICATION: Use a reviver to block __proto__ ---
+                        const importedData = JSON.parse(event.target.result, (key, value) => {
+                            if (key === '__proto__') {
+                                return undefined; // Disallow __proto__
+                            }
+                            return value;
+                        });
+                        // --- END MODIFICATION ---
                         
                         // Basic validation
                         if (typeof importedData !== 'object' || importedData === null || !importedData.data || !importedData.hasOwnProperty('assessmentName')) {
                             throw new Error('Invalid file structure. Missing "data" or "assessmentName" key.');
                         }
+
+                        // --- VERSION CHECKING ---
+                        const importedVersion = importedData.toolVersion;
+                        if (!importedVersion) {
+                            // Legacy format (pre-1.3)
+                            if (!confirm('This appears to be an older export file. Importing it may result in data loss for any new fields. Continue?')) {
+                                e.target.value = null; // Reset file input
+                                return;
+                            }
+                        } else if (parseFloat(importedVersion) > parseFloat(CURRENT_TOOL_VERSION)) {
+                            // Newer format
+                            alert(`Warning: This file was exported from a newer tool version (${importedVersion}). Your current version is ${CURRENT_TOOL_VERSION}. Importing may cause errors or data loss.`);
+                        } else if (parseFloat(importedVersion) < parseFloat(CURRENT_TOOL_VERSION)) {
+                            // Older, but versioned format
+                            console.log(`Importing data from older version ${importedVersion}. Migration logic would run here if needed.`);
+                            // No migration logic needed yet, but this is where it would go.
+                        }
+                        // --- END VERSION CHECKING ---
+
                         
                         if (confirm('This will overwrite all current assessment data in your browser. This action cannot be undone. Are you sure you want to proceed?')) {
                             // Save the new data
@@ -2279,13 +2498,13 @@
          * This is called by the data loader IIFE.
          */
         function init() {
-            console.log('CTI-CMM Tool Initializing...');
+            console.log(`CTI-CMM Tool Initializing (v${CURRENT_TOOL_VERSION})...`);
             if (!window.CMM_DATA) {
                 console.error("CMM_DATA not found. Initialization failed.");
                 return;
             }
             
-            store.loadState(); // Load mode and data from localStorage
+            store.loadState(); // Load mode and data from localStorage into class instances
 
             // Populate Domain Nav
             window.CMM_DATA.domains.forEach(domain => {
@@ -2340,8 +2559,6 @@
             }
             
             // 3. Set the initial page. showPage() will save this as the new "last view"
-            // We pass 'false' because we want the *initial load* to set the URL
-            // in case it was loaded from localStorage (which has no URL yet).
             view.showPage(lastPage, lastDomain, false); 
             
             // 4. Run visibility checks
