@@ -225,12 +225,53 @@
                 <span class="text-sm text-slate-400">Assessment v1.5</span>
             </div>
             <ul id="main-nav" class="space-y-1 p-2">
-                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="dashboard">Dashboard</a></li>
-                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="priorities">Priorities Sheet</a></li>
+<li>
+                    <a href="#" class="nav-link flex items-center space-x-2 rounded-md py-2 px-3 hover:bg-slate-700" data-page="dashboard">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 flex-shrink-0">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                        </svg>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link flex items-center space-x-2 rounded-md py-2 px-3 hover:bg-slate-700" data-page="priorities">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 flex-shrink-0">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5v15m6-15v15m-10.5-15h15a2.25 2.25 0 012.25 2.25v10.5A2.25 2.25 0 0119.5 19.5h-15a2.25 2.25 0 01-2.25-2.25V6.75A2.25 2.25 0 014.5 4.5z" />
+                        </svg>
+                        <span>Priorities Sheet</span>
+                    </a>
+                </li>
                 
-                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="data">Data Management</a></li>
+                <li>
+                    <a href="#" class="nav-link flex items-center space-x-2 rounded-md py-2 px-3 hover:bg-slate-700" data-page="data">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 flex-shrink-0">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375" />
+                        </svg>
+                        <span>Data Management</span>
+                    </a>
+                </li>
                 
-                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="about">About</a></li>
+                <li>
+                    <a href="#" class="nav-link flex items-center space-x-2 rounded-md py-2 px-3 hover:bg-slate-700" data-page="about">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 flex-shrink-0" fill="none">
+                            <circle opacity="0.5" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"></circle>
+                            <path d="M12 17V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                            <circle cx="1" cy="1" r="1" transform="matrix(1 0 0 -1 11 9)" fill="currentColor"></circle>
+                        </svg>
+                        <span>About</span>
+                    </a>
+                </li>
+                
+                <li class="block rounded-md py-2 px-3">
+                    <label class="flex items-center justify-between cursor-pointer" title="Enable to show Target, Priority, and planning fields.">Planning mode
+                        <div class="relative">
+                            <input type="checkbox" id="mode-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-600 rounded-full peer-checked:bg-blue-600"></div>
+                            <div class="absolute top-0.5 left-[2px] bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-full"></div>
+                        </div>
+                    </label>
+                </li>
+
                 
                 <li class="pt-4">
                     <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Domain completion %</h2>
@@ -238,25 +279,7 @@
                         </ul>
                 </li>
 
-                <li class="pt-8">
-                    <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Settings</h2>
-                    <div class="p-2"> <div class="p-3 text-sm">
-                            <label class="flex items-center justify-between cursor-pointer">
-                                <span class="text-slate-200">Planning Mode</span>
-                                <div class="relative">
-                                    <input type="checkbox" id="mode-toggle" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-slate-600 rounded-full peer-checked:bg-blue-600"></div>
-                                    <div class="absolute top-0.5 left-[2px] bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-full"></div>
-                                </div>
-                            </label>
-                            <p class="mt-2 text-xs text-slate-500">
-                                Enable to show Target, Priority, and planning fields.
-                            </p>
-                        </div>
-                        
-                        </div>
-                </li>
-            </ul>
+           </ul>
         </nav>
         <main id="main-content" class="flex-1 overflow-y-auto p-6 md:p-8">
             
