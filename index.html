@@ -218,16 +218,19 @@
 <body class="bg-slate-100 font-sans text-slate-900">
 
     <div class="flex h-screen overflow-hidden">
+        
         <nav class="w-64 bg-slate-800 text-slate-200 flex-shrink-0 overflow-y-auto">
             <div class="p-4">
                 <h1 class="text-xl font-bold text-white">CTI-CMM Tool</h1>
                 <span class="text-sm text-slate-400">Assessment v1.5</span>
             </div>
             <ul id="main-nav" class="space-y-1 p-2">
-                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="home">Home</a></li>
-                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="about">About</a></li>
                 <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="dashboard">Dashboard</a></li>
                 <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="priorities">Priorities Sheet</a></li>
+                
+                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="data">Data Management</a></li>
+                
+                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="about">About</a></li>
                 
                 <li class="pt-4">
                     <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Domain completion %</h2>
@@ -237,111 +240,26 @@
 
                 <li class="pt-8">
                     <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Settings</h2>
-                    <div class="p-3 text-sm">
-                        <label class="flex items-center justify-between cursor-pointer">
-                            <span class="text-slate-200">Planning Mode</span>
-                            <div class="relative">
-                                <input type="checkbox" id="mode-toggle" class="sr-only peer">
-                                <div class="w-11 h-6 bg-slate-600 rounded-full peer-checked:bg-blue-600"></div>
-                                <div class="absolute top-0.5 left-[2px] bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-full"></div>
-                            </div>
-                        </label>
-                        <p class="mt-2 text-xs text-slate-500">
-                            Enable to show Target, Priority, and planning fields.
-                        </p>
-                    </div>
-                </li>
-                <li class="pt-8">
-                    <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Data</h2>
-                    <div class="p-2 space-y-3">
-                        <div>
-                            <label for="assessment-name" class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Assessment Name</label>
-                            <input type="text" id="assessment-name" class="mt-1 w-full bg-slate-700 text-white text-sm p-2 rounded-md border border-slate-600 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Q3 2025 Assessment">
-                        </div>
-
-                        <button id="export-json" class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-3 rounded-md">
-                            Export Results (.json)
-                        </button>
-
-                        <div>
-                            <label for="import-json" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-3 rounded-md cursor-pointer block text-center">
-                                Import Results (.json)
+                    <div class="p-2"> <div class="p-3 text-sm">
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="text-slate-200">Planning Mode</span>
+                                <div class="relative">
+                                    <input type="checkbox" id="mode-toggle" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-slate-600 rounded-full peer-checked:bg-blue-600"></div>
+                                    <div class="absolute top-0.5 left-[2px] bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-full"></div>
+                                </div>
                             </label>
-                            <input type="file" id="import-json" class="hidden" accept=".json,application/json">
+                            <p class="mt-2 text-xs text-slate-500">
+                                Enable to show Target, Priority, and planning fields.
+                            </p>
                         </div>
-
-                        <button id="reset-data" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-3 rounded-md">
-                            Reset All Data
-                        </button>
-                        <p class="mt-2 text-xs text-slate-500">
-                            Scores are locally saved in your browser. This button clears all your saved scores. This cannot be undone.
-                        </p>
-                    </div>
+                        
+                        </div>
                 </li>
             </ul>
         </nav>
-
         <main id="main-content" class="flex-1 overflow-y-auto p-6 md:p-8">
             
-            <div id="page-home" class="page max-w-4xl mx-auto">
-                <div class="bg-white p-8 rounded-lg shadow-md">
-                    <h2 class="text-3xl font-bold text-slate-800 mb-4">Welcome to the CTI-CMM Assessment Tool (BETA Version 1.5)</h2>
-                    <p class="text-lg text-slate-600 mb-6">The Cyber Threat Intelligence Capability Maturity Model (CTI-CMM) is designed to help improve cyber threat intelligence teams support to cybersecurity and risk management functions, leading to improved security outcomes. Its goal is to provide a roadmap on how intelligence programs can mature existing support and process constructs to ultimately strengthen the organization's operational resilience. The CTI-CMM is industry sector, organization type, and size agnostic and was inspired by the U.S. Department of Energy's C2M2 cybersecurity framework. </p>
-
-                    <p class="text-lg text-slate-600 mb-6">The CTI-CMM offers a stakeholder-first approach to CTI maturity. The CTI-CMM focuses on the implementation and management of CTI best practices associated with information technology (IT), operational technology (OT), and information assets and the environments in which they operate. The model can be used to:</p>
-        
-        <div class="text-lg text-slate-600 mb-6">
-            <ul class="list-disc pl-5 space-y-1">
-                <li>Enable organizations to effectively and consistently evaluate and benchmark cyber threat intelligence capabilities</li>
-                <li>Improve organizational reach and support to cybersecurity and risk management stakeholders</li>
-                <li>Establish a roadmap to grow CTI program capabilities and improve existing maturity</li>
-                <li>Prioritize investment and actions to improve cyber threat intelligence capabilities</li>
-                <li>Share knowledge and best practices on CTI program operations</li>
-            </ul>
-        </div>
-                    <p class="text-lg text-slate-600 mb-6"></p>
-
-                    <div class="prose max-w-none prose-slate">
-                        <h3 class="text-xl font-semibold text-slate-800 mt-6 mb-2">How to Use This Tool</h3>
-                        <p class="text-lg text-slate-600 mb-6">This tool is a stand-alone web application to help you self-evaluate your current maturity posture across each of the CTI-CMM domains.</p>
-                        <ol class="list-decimal list-inside space-y-2">
-                            <li  class="text-lg text-slate-600 mb-6"><strong>Navigate Domains:</strong> Use the sidebar to select one of the 11 CTI-CMM domains.</li>
-                            <li  class="text-lg text-slate-600 mb-6"><strong>Choose Your Mode:</strong> Use the "Planning Mode" toggle in the sidebar.
-                                <ul class="list-disc list-inside">
-                                    <li><strong>Benchmark Mode (Off):</strong> Assess your `Current` maturity and add `Evidence`, `Point of Contact`, and `Notes`.</li>
-                                    <li><strong>Planning Mode (On):</strong> Adds fields for `Target` maturity, `Target Date`, `Impact`, `Effort`, and `Priority`.</li>
-                                </ul>
-                            </li>
-                            <li class="text-lg text-slate-600 mb-6"><strong>Self-Assess:</strong> For each practice, select your <strong>Current</strong> and <strong>Target</strong> Maturity (0-3) using the clickable dot widgets. Your progress is tracked by the progress bars in the sidebar.</li>
-                            <li class="text-lg text-slate-600 mb-6"><strong>Mark Practices Relevant:</strong> Use the "Relevant" toggle on the top right of each practice to include or exclude it from scoring.</li>
-                            <li class="text-lg text-slate-600 mb-6"><strong>Auto-Save:</strong> All your entries are saved to your browser's local storage automatically. You can leave and come back at any time.</li>
-                            <li class="text-lg text-slate-600 mb-6"><strong>View Results:</strong>
-                                <ul class="list-disc list-inside">
-                                    <li>The <strong>Dashboard</strong> shows your overall maturity and completion percentage for each domain.</li>
-                                    <li>The <strong>Priorities Sheet</strong> (available in Planning Mode) aggregates all your assessment items and helps you plan your improvement journey.</li>
-                                </ul>
-                            </li>
-                        </ol>
-                        
-                        <h3 class="text-xl font-semibold text-slate-800 mt-6 mb-2">The 11 CTI-CMM Domains</h3>
-                        <p class="text-lg text-slate-600 mb-6">The CTI-CMM v1.2 is organized into 11 domains, comprised of two or more objectives:</p>
-                        <ul class="list-decimal list-inside text-lg text-slate-600 mb-6">
-                            <li>Asset, Change, and Configuration Management (ASSET)</li>
-                            <li>Threat and Vulnerability Management (THREAT)</li>
-                            <li>Risk Management (RISK)</li>
-                            <li>Identity and Access Management (ACCESS)</li>
-                            <li>Situational Awareness (SITUATION)</li>
-                            <li>Event and Incident Response, Continuity of Operations (RESPONSE)</li>
-                            <li>Third-Party Risk Management (THIRD-PARTIES)</li>
-                            <li>Fraud and Abuse Management (FRAUD)</li>
-                            <li>Workforce Management (WORKFORCE)</li>
-                            <li>Cybersecurity Architecture (ARCHITECTURE)</li>
-                            <li>Cybersecurity Program Management (PROGRAM)</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
             <div id="page-dashboard" class="page">
                 <h2 class="text-3xl font-bold text-slate-800 mb-6">Assessment Dashboard</h2>
                 
@@ -451,12 +369,78 @@
                 </div>
             </div>
 
+            <div id="page-data" class="page max-w-4xl mx-auto">
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <h2 class="text-3xl font-bold text-slate-800 mb-6">Data Management</h2>
+
+                    <div class="prose max-w-none prose-slate space-y-8">
+                        
+                        <div>
+                            <h3 class="text-xl font-semibold text-slate-800 mb-2">Assessment Name</h3>
+                            <label for="assessment-name" class="sr-only">Assessment Name</label>
+                            <input type="text" id="assessment-name" class="w-full max-w-md bg-slate-50 text-slate-900 text-sm p-2 rounded-md border border-slate-300 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Q3 2025 Assessment">
+                            <p class="mt-2 text-slate-600">A name for this assessment (e.g., "Q3 2025 Assessment"). This is saved with your export file.</p>
+                        </div>
+
+                        <div>
+                            <h3 class="text-xl font-semibold text-slate-800 mb-2">Export Data</h3>
+                            <button id="export-json" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md">
+                                Export Results (.json)
+                            </button>
+                            <p class="mt-2 text-slate-600">Save a backup of all your scores and planning data to a JSON file on your computer.</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-xl font-semibold text-slate-800 mb-2">Import Data</h3>
+                             <label for="import-json" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md cursor-pointer inline-block">
+                                Import Results (.json)
+                            </label>
+                            <input type="file" id="import-json" class="hidden" accept=".json,application/json">
+                            <p class="mt-2 text-slate-600">Load a previous assessment from a JSON file. <strong class="text-red-700">Warning: This will overwrite all current data in your browser.</strong></p>
+                        </div>
+
+                        <div>
+                            <h3 class="text-xl font-semibold text-slate-800 mb-2">Reset Tool</h3>
+                             <button id="reset-data" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md">
+                                Reset All Data
+                            </button>
+                            <p class="mt-2 text-slate-600">Clear all scores, notes, and planning data from your browser. <strong class="text-red-700">This cannot be undone.</strong></p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
             <div id="page-about" class="page max-w-4xl mx-auto">
                 <div class="bg-white p-8 rounded-lg shadow-md">
-                    <h2 class="text-3xl font-bold text-slate-800 mb-6">About the CTI-CMM Tool</h2>
+                    <h2 class="text-3xl font-bold text-slate-800 mb-6">About & Help</h2>
             
                     <div class="prose max-w-none prose-slate">
-                        <h3 class="text-xl font-semibold text-slate-800 mt-6 mb-2">About</h3>
+
+                        <h3 class="text-xl font-semibold text-slate-800 mt-6 mb-2">How to Use This Tool</h3>
+                        <p class="text-lg text-slate-600 mb-6">This tool is a stand-alone web application to help you self-evaluate your current maturity posture across each of the CTI-CMM domains.</p>
+                        <ol class="list-decimal list-inside space-y-2">
+                            <li  class="text-lg text-slate-600 mb-6"><strong>Navigate Domains:</strong> Use the sidebar to select one of the 11 CTI-CMM domains.</li>
+                            <li  class="text-lg text-slate-600 mb-6"><strong>Choose Your Mode:</strong> Use the "Planning Mode" toggle in the sidebar.
+                                <ul class="list-disc list-inside">
+                                    <li><strong>Benchmark Mode (Off):</strong> Assess your `Current` maturity and add `Evidence`, `Point of Contact`, and `Notes`.</li>
+                                    <li><strong>Planning Mode (On):</strong> Adds fields for `Target` maturity, `Target Date`, `Impact`, `Effort`, and `Priority`.</li>
+                                </ul>
+                            </li>
+                            <li class="text-lg text-slate-600 mb-6"><strong>Self-Assess:</strong> For each practice, select your <strong>Current</strong> and <strong>Target</strong> Maturity (0-3) using the clickable dot widgets. Your progress is tracked by the progress bars in the sidebar.</li>
+                            <li class="text-lg text-slate-600 mb-6"><strong>Mark Practices Relevant:</strong> Use the "Relevant" toggle on the top right of each practice to include or exclude it from scoring.</li>
+                            <li class="text-lg text-slate-600 mb-6"><strong>Auto-Save:</strong> All your entries are saved to your browser's local storage automatically. You can leave and come back at any time.</li>
+                            <li class="text-lg text-slate-600 mb-6"><strong>View Results:</strong>
+                                <ul class="list-disc list-inside">
+                                    <li>The <strong>Dashboard</strong> page shows your overall maturity and completion percentage for each domain.</li>
+                                    <li>The <strong>Priorities Sheet</strong> (available in Planning Mode) aggregates all your assessment items and helps you plan your improvement journey.</li>
+                                </ul>
+                            </li>
+                        </ol>
+                        
+                        <hr class="my-6">
+
+
+                        <h3 class="text-xl font-semibold text-slate-800 mt-6 mb-2">About this Tool</h3>
                         <p class="text-lg text-slate-600 mb-6">
                              This web assessment tool is an alternative to the <a href="https://cti-cmm.org/beta-assessment-tool" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold underline decoration-2 decoration-blue-200 hover:text-blue-800 hover:decoration-blue-400 px-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition">spreadsheet version</a> of the CTI-CMM. 
                              It provides an interactive interface, auto-saving capabilities, import / export of results and a dashboard to visualize your maturity posture.
@@ -900,7 +884,7 @@ class Domain {
             assessmentData: {}, // This will hold { "ASSET": Domain, "THREAT": Domain, ... }
             appMode: 'benchmark', // 'benchmark' or 'planning'
             prioritySort: { column: 'priority', direction: 'desc' },
-            activePage: 'home',
+            activePage: 'dashboard', // Default page
             activeDomain: null,
             assessmentName: '',
             chartInstances: {
@@ -922,11 +906,11 @@ class Domain {
             exportButton: document.getElementById('export-json'),
             importButton: document.getElementById('import-json'),
             // Page containers
-            pageHome: document.getElementById('page-home'),
+            pageHome: null, // page-home is removed
             pageDashboard: document.getElementById('page-dashboard'),
             pageAssessment: document.getElementById('page-assessment'),
             pagePriorities: document.getElementById('page-priorities'),
-            // === NEW: About Page ===
+            pageData: document.getElementById('page-data'), // NEW PAGE
             pageAbout: document.getElementById('page-about'),
             // Other elements
             assessmentTitle: document.getElementById('assessment-title'),
@@ -1276,7 +1260,7 @@ class Domain {
                     if (pageId === 'assessment' && domainId) {
                         title = `${domainId} - ${title}`;
                         url += `?domain=${domainId}`;
-                    } else if (pageId !== 'home') {
+                    } else if (pageId !== 'dashboard') { // Default page is 'dashboard'
                         title = `${pageId.charAt(0).toUpperCase() + pageId.slice(1)} - ${title}`;
                         url += `?page=${pageId}`;
                     }
@@ -1292,7 +1276,7 @@ class Domain {
                     let title = "CTI-CMM Assessment Tool";
                     if (pageId === 'assessment' && domainId) {
                         title = `${domainId} - ${title}`;
-                    } else if (pageId !== 'home') {
+                    } else if (pageId !== 'dashboard') { // Default page is 'dashboard'
                         title = `${pageId.charAt(0).toUpperCase() + pageId.slice(1)} - ${title}`;
                     }
                     document.title = title;
@@ -1321,7 +1305,8 @@ class Domain {
                 // Call render functions for the specific page
                 switch (pageId) {
                     case 'home':
-                        view.renderHomePage();
+                        // This case should no longer be hit, but redirect to dashboard just in case
+                        view.showPage('dashboard', null, fromPopState); 
                         break;
                     case 'dashboard':
                         view.renderDashboardPage();
@@ -1334,7 +1319,10 @@ class Domain {
                     case 'priorities':
                         view.renderPrioritiesPage();
                         break;
-                    // === NEW: About Page ===
+                    // === NEW PAGE CASE ===
+                    case 'data':
+                        view.renderDataPage();
+                        break;
                     case 'about':
                         view.renderAboutPage();
                         break;
@@ -1342,10 +1330,15 @@ class Domain {
             },
 
             renderHomePage() {
-                // Static content, nothing to render
+                // No-op, this page is removed
             },
             
-            // === NEW: About Page Renderer ===
+            // === NEW PAGE RENDERER ===
+            renderDataPage() {
+                // Static content, nothing to render
+                // Event listeners are bound by ID in init()
+            },
+
             renderAboutPage() {
                 // Static content, nothing to render
             },
@@ -2066,7 +2059,7 @@ class Domain {
                 });
 
                 if (state.appMode === 'benchmark' && state.activePage === 'priorities') {
-                    view.showPage('home');
+                    view.showPage('dashboard');
                 }
             },
             
@@ -2651,8 +2644,8 @@ class Domain {
                     view.showPage(e.state.page, e.state.domain, true); // Pass true
                 } else {
                     // This happens when going back to the very first load
-                    console.log('PopState: Navigating to initial state (home)');
-                    view.showPage('home', null, true); // Pass true
+                    console.log('PopState: Navigating to initial state (dashboard)');
+                    view.showPage('dashboard', null, true); // Pass true
                 }
             },
 
@@ -2743,10 +2736,13 @@ class Domain {
             dom.modeToggle.addEventListener('change', events.handleModeToggle);
             
             // --- Event Delegation ---
+            // Use delegation for content clicks/changes
             dom.mainContent.addEventListener('change', events.handleContentChange);
             dom.mainContent.addEventListener('click', events.handleContentClick);
 
-            // --- Sidebar Listeners ---
+            // --- Direct Listeners for Moved Data Controls ---
+            // These still work because the `dom` object is populated by ID
+            // at load time, before the page is displayed.
             dom.assessmentNameInput.addEventListener('change', events.handleAssessmentNameChange);
             dom.exportButton.addEventListener('click', view.exportResultsToJSON);
             dom.importButton.addEventListener('change', events.handleImportChange);
@@ -2797,7 +2793,7 @@ class Domain {
                 urlPage = 'assessment';
             }
 
-            let lastPage = 'home';
+            let lastPage = 'dashboard'; // Default page
             let lastDomain = null;
 
             if (urlPage) {
@@ -2811,7 +2807,7 @@ class Domain {
                     const savedView = localStorage.getItem(VIEW_STORAGE_KEY);
                     if (savedView) {
                         const parsedView = JSON.parse(savedView);
-                        lastPage = parsedView.page || 'home';
+                        lastPage = parsedView.page || 'dashboard'; // Default to dashboard
                         lastDomain = parsedView.domain || null;
                         console.log(`Restoring from localStorage: ${lastPage}, ${lastDomain || ''}`);
                     }
