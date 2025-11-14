@@ -198,6 +198,21 @@
             opacity: 0.5;
             pointer-events: none;
         }
+        /* === NEW STYLES FOR WIDGET WARNING === */
+        .target-widget.widget-warning .target-dot {
+            border-color: #f59e0b; /* amber-500 */
+        }
+        .target-widget.widget-warning .target-dot:hover {
+            border-color: #d97706; /* amber-600 */
+        }
+        .target-widget.widget-warning .target-dot.active {
+            background-color: #f59e0b; /* amber-500 */
+            border-color: #b45309; /* amber-700 */
+        }
+        .target-widget.widget-warning .target-line.active {
+            background-color: #f59e0b; /* amber-500 */
+        }
+        /* === END NEW STYLES === */
     </style>
 </head>
 <body class="bg-slate-100 font-sans text-slate-900">
@@ -210,11 +225,12 @@
             </div>
             <ul id="main-nav" class="space-y-1 p-2">
                 <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="home">Home</a></li>
+                <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="about">About</a></li>
                 <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="dashboard">Dashboard</a></li>
                 <li><a href="#" class="nav-link block rounded-md py-2 px-3 hover:bg-slate-700" data-page="priorities">Priorities Sheet</a></li>
                 
                 <li class="pt-4">
-                    <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Assessment Domains</h2>
+                    <h2 class="px-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Domain completion %</h2>
                     <ul id="domain-nav" class="mt-1 space-y-1">
                         </ul>
                 </li>
@@ -270,7 +286,7 @@
             <div id="page-home" class="page max-w-4xl mx-auto">
                 <div class="bg-white p-8 rounded-lg shadow-md">
                     <h2 class="text-3xl font-bold text-slate-800 mb-4">Welcome to the CTI-CMM Assessment Tool (BETA Version 1.5)</h2>
-                    <p class="text-lg text-slate-600 mb-6">The Cyber Threat Intelligence Capability Maturity Model (CTI-CMM) is designed to help improve cyber threat intelligence teams support to cybersecurity and risk management functions, leading to improved security outomes. Its goal is to provide a roadmap on how intelligence programs can mature existing support and process constructs to ultimately strengthen the organization's operational resilience. The CTI-CMM is industry sector, organization type, and size agnostic and was inspired by the U.S. Department of Energy's C2M2 cybersecurity framework. </p>
+                    <p class="text-lg text-slate-600 mb-6">The Cyber Threat Intelligence Capability Maturity Model (CTI-CMM) is designed to help improve cyber threat intelligence teams support to cybersecurity and risk management functions, leading to improved security outcomes. Its goal is to provide a roadmap on how intelligence programs can mature existing support and process constructs to ultimately strengthen the organization's operational resilience. The CTI-CMM is industry sector, organization type, and size agnostic and was inspired by the U.S. Department of Energy's C2M2 cybersecurity framework. </p>
 
                     <p class="text-lg text-slate-600 mb-6">The CTI-CMM offers a stakeholder-first approach to CTI maturity. The CTI-CMM focuses on the implementation and management of CTI best practices associated with information technology (IT), operational technology (OT), and information assets and the environments in which they operate. The model can be used to:</p>
         
@@ -297,6 +313,7 @@
                                 </ul>
                             </li>
                             <li class="text-lg text-slate-600 mb-6"><strong>Self-Assess:</strong> For each practice, select your <strong>Current</strong> and <strong>Target</strong> Maturity (0-3) using the clickable dot widgets. Your progress is tracked by the progress bars in the sidebar.</li>
+                            <li class="text-lg text-slate-600 mb-6"><strong>Mark Practices Relevant:</strong> Use the "Relevant" toggle on the top right of each practice to include or exclude it from scoring.</li>
                             <li class="text-lg text-slate-600 mb-6"><strong>Auto-Save:</strong> All your entries are saved to your browser's local storage automatically. You can leave and come back at any time.</li>
                             <li class="text-lg text-slate-600 mb-6"><strong>View Results:</strong>
                                 <ul class="list-disc list-inside">
@@ -353,7 +370,7 @@
                                     <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Domain</th>
                                     <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Score</th>
                                     <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Max Score</th>
-                                    <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Score %</th>
+                                    <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Maturity %</th>
                                     <th class="py-3 px-6 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Target %</th>
                                 </tr>
                             </thead>
@@ -403,6 +420,7 @@
                 <div class="bg-white p-6 rounded-lg shadow-md mb-6">
                     <h3 class="text-xl font-semibold mb-4">What is this?</h3>
                     <p class="text-slate-600">This planning sheet aggregates all practices where your <strong>Target Score</strong> is greater than your current <strong>Score</strong> (or where your Current Score is not yet set). Click any column header to sort the list and help you plan your improvement journey.</p>
+                    <p class="text-slate-600 mt-2">Only practices from 'Relevant' domains that are individually marked 'Relevant' are shown here.</p>
                     <div class="mt-4">
                         <button id="export-csv" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md font-medium text-sm">
                             Export to CSV
@@ -433,7 +451,59 @@
                 </div>
             </div>
 
-        </main>
+            <div id="page-about" class="page max-w-4xl mx-auto">
+                <div class="bg-white p-8 rounded-lg shadow-md">
+                    <h2 class="text-3xl font-bold text-slate-800 mb-6">About the CTI-CMM Tool</h2>
+            
+                    <div class="prose max-w-none prose-slate">
+                        <h3 class="text-xl font-semibold text-slate-800 mt-6 mb-2">About</h3>
+                        <p class="text-lg text-slate-600 mb-6">
+                             This web assessment tool is an alternative to the <a href="https://cti-cmm.org/beta-assessment-tool" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold underline decoration-2 decoration-blue-200 hover:text-blue-800 hover:decoration-blue-400 px-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition">spreadsheet version</a> of the CTI-CMM. 
+                             It provides an interactive interface, auto-saving capabilities, import / export of results and a dashboard to visualize your maturity posture.
+                        </p>
+            
+                        <h3 class="text-xl font-semibold text-slate-800 mt-6 mb-2">Version History</h3>
+                        <div class="text-lg text-slate-600 mb-6">
+                            <ul class="space-y-3">
+                                <li>
+                                    <strong>v3 (2025-11-14):</strong>
+                                    <ul class="list-disc pl-6 mt-2 space-y-1">
+                                        <li>Import / export assessment data</li>
+                                        <li>Disable individual Practices</li>
+                                        <li>Use JS objects in codebase</li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <strong>v2 (2025-11-08):</strong>
+                                    <ul class="list-disc pl-6 mt-2 space-y-1">
+                                        <li>Added Planning Mode</li>
+                                        <li>Added short Practice names</li>
+                                        <li>Improved score / target widgets</li>
+                                        <li>Calculate Practice priorities</li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <strong>v1 (2025-11-04):</strong>
+                                    <ul class="list-disc pl-6 mt-2 space-y-1">
+                                        <li>Basic conversion of XLS assessment tool</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+            
+                        <h3 class="text-xl font-semibold text-slate-800 mt-6 mb-2">Repo</h3>
+                        <p class="text-lg text-slate-600 mb-6">
+                            The source code for this tool is available on <a href="https://github.com/chorsley/cti-cmm-assessment-tool" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold underline decoration-2 decoration-blue-200 hover:text-blue-800 hover:decoration-blue-400 px-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition">GitHub</a> under the MIT License.
+                        </p>
+
+                        <h3 class="text-xl font-semibold text-slate-800 mt-6 mb-2">Contact</h3>
+                        <p class="text-lg text-slate-600 mb-6">
+                            Maintained by Chris Horsley at <a href="https://cosive.com" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-semibold underline decoration-2 decoration-blue-200 hover:text-blue-800 hover:decoration-blue-400 px-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition">Cosive</a> in Melbourne, Australia. For questions or feedback, please reach out via <a href="mailto:hello@cosive.com" class="text-blue-600 font-semibold underline decoration-2 decoration-blue-200 hover:text-blue-800 hover:decoration-blue-400 px-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-blue-200 transition">hello@cosive.com</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            </main>
     </div>
 
     <script>
@@ -464,6 +534,7 @@ class Practice {
     poc = '';
     targetDate = '';
     notes = '';
+    relevant = true; // === NEW v1.6 ===
 
     /**
      * Creates a Practice instance from the static cti-cmm-data.json data.
@@ -493,7 +564,8 @@ class Practice {
         // Define which keys are user-editable
         const userKeys = [
             'score', 'targetScore', 'impact', 'loe', 
-            'evidence', 'poc', 'targetDate', 'notes'
+            'evidence', 'poc', 'targetDate', 'notes',
+            'relevant' // === NEW v1.6 ===
         ];
         
         for (const key of userKeys) {
@@ -520,7 +592,8 @@ class Practice {
             evidence: this.evidence,
             poc: this.poc,
             targetDate: this.targetDate,
-            notes: this.notes
+            notes: this.notes,
+            relevant: this.relevant // === NEW v1.6 ===
         };
     }
 
@@ -589,16 +662,21 @@ class Objective {
     
     /**
      * Calculates the aggregate scores for all practices in this objective.
-     * --- BUGFIX v1.4 ---
-     * This logic now correctly checks for null scores.
+     * --- MODIFIED v1.6 ---
+     * This logic now correctly checks for null scores AND practice.relevant.
      */
     calculateScores() {
         let totalScore = 0;
         let totalMax = 0;
         let totalAssessed = 0;
-        let totalPractices = this.practices.length;
+        let totalPractices = 0; // === MODIFIED v1.6: Will only count relevant practices
         
         for (const practice of this.practices) {
+            // === NEW v1.6: Skip irrelevant practices ===
+            if (!practice.relevant) continue;
+            
+            totalPractices++; // Count this relevant practice
+
             const currentScore = practice.parseScore(practice.score);
             const maxScore = parseInt(practice.max, 10) || 0;
 
@@ -713,19 +791,22 @@ class Domain {
     
     /**
      * Calculates the aggregate scores for all practices in this domain.
-     * --- BUGFIX v1.4 ---
-     * This logic now correctly checks for null scores, especially for totalTargetScore.
+     * --- MODIFIED v1.6 ---
+     * This logic now correctly checks for null scores AND practice.relevant.
      */
     calculateScores() {
         let totalScore = 0;
         let totalMax = 0;
         let totalTargetScore = 0;
         let totalAssessed = 0;
-        let totalPractices = 0;
+        let totalPractices = 0; // === MODIFIED v1.6: Will only count relevant practices
 
         for (const objective of this.objectives) {
             for (const practice of objective.practices) {
-                totalPractices++;
+                // === NEW v1.6: Skip irrelevant practices ===
+                if (!practice.relevant) continue;
+
+                totalPractices++; // Count this relevant practice
                 
                 // Get the raw scores, not the "calculated" ones from getScores()
                 const currentScore = practice.parseScore(practice.score);
@@ -777,7 +858,7 @@ class Domain {
         'use strict';
 
         // --- 1. Constants ---
-        const CURRENT_TOOL_VERSION = '1.5';
+        const CURRENT_TOOL_VERSION = '1.6'; // === BUMPED VERSION ===
         const STORAGE_KEY = 'ctiCmmAssessmentData';
         const MODE_STORAGE_KEY = 'ctiCmmAppMode';
         const VIEW_STORAGE_KEY = 'ctiCmmAppView'; 
@@ -845,6 +926,8 @@ class Domain {
             pageDashboard: document.getElementById('page-dashboard'),
             pageAssessment: document.getElementById('page-assessment'),
             pagePriorities: document.getElementById('page-priorities'),
+            // === NEW: About Page ===
+            pageAbout: document.getElementById('page-about'),
             // Other elements
             assessmentTitle: document.getElementById('assessment-title'),
             assessmentDate: document.getElementById('assessment-date'),
@@ -885,24 +968,28 @@ class Domain {
 
             /**
              * Calculates scores for all domains and totals.
+             * --- MODIFIED v1.6 ---
+             * This function now implicitly uses the updated Domain.calculateScores()
+             * which correctly accounts for practice.relevant. No code change
+             * is needed *here* as the logic is correctly encapsulated in the Domain class.
              */
             calculateAllScores() {
                 let grandTotalScore = 0;
                 let grandTotalMax = 0;
                 let grandTotalTargetScore = 0;
                 let grandTotalAssessed = 0;
-                let grandTotalPractices = 0; // Only count practices from relevant domains
+                let grandTotalPractices = 0; // Only count *relevant* practices from *relevant* domains
 
                 const domainScores = window.CMM_DATA.domains.map(domainData => {
                     const domainInstance = state.assessmentData[domainData.id];
-                    const scores = domainInstance.calculateScores();
+                    const scores = domainInstance.calculateScores(); // This now returns scores for *relevant* practices
                     
-                    if (scores.relevant) { // Only add to totals if relevant
+                    if (scores.relevant) { // Only add to totals if domain is relevant
                         grandTotalScore += scores.totalScore;
                         grandTotalMax += scores.totalMax;
                         grandTotalTargetScore += scores.totalTargetScore;
                         grandTotalAssessed += scores.totalAssessed;
-                        grandTotalPractices += scores.totalPractices;
+                        grandTotalPractices += scores.totalPractices; // This is now the count of *relevant* practices
                     }
                     // Combine static data (nickname) with calculated scores
                     return { ...domainData, ...scores }; 
@@ -1247,13 +1334,29 @@ class Domain {
                     case 'priorities':
                         view.renderPrioritiesPage();
                         break;
+                    // === NEW: About Page ===
+                    case 'about':
+                        view.renderAboutPage();
+                        break;
                 }
             },
 
             renderHomePage() {
                 // Static content, nothing to render
             },
+            
+            // === NEW: About Page Renderer ===
+            renderAboutPage() {
+                // Static content, nothing to render
+            },
 
+            /**
+             * Renders the dashboard page.
+             * --- MODIFIED v1.6 ---
+             * This function now implicitly uses utils.calculateAllScores()
+             * which correctly accounts for practice.relevant. No code change
+             * is needed *here* as the logic is correctly encapsulated.
+             */
             renderDashboardPage() {
                 const { 
                     domainScores, 
@@ -1296,7 +1399,7 @@ class Domain {
 
                 // 2. Populate Table Footer
                 dom.dashboardTableFooter.innerHTML = `
-                    <td class="py-4 px-6 text-sm">Total (Relevant Domains)</td>
+                    <td class="py-4 px-6 text-sm">Total (Relevant Domains & Practices)</td>
                     <td class="py-4 px-6 text-sm">${grandTotalScore}</td>
                     <td class="py-4 px-6 text-sm">${grandTotalMax}</td>
                     <td class="py-4 px-6 text-sm">${overallPercent.toFixed(1)}%</td>
@@ -1366,7 +1469,7 @@ class Domain {
                             },
                             subtitle: {
                                 display: true,
-                                text: 'Overall Assessment (Relevant Domains)',
+                                text: 'Overall Assessment (Relevant Items)',
                                 font: { size: 16 },
                                 color: '#64748b',
                                 padding: { bottom: 30 }
@@ -1379,6 +1482,9 @@ class Domain {
             /**
              * Renders the main assessment page for a given domain.
              * SECURE: Uses .textContent for all untrusted data (slug, text).
+             * --- MODIFIED v1.6 ---
+             * Added relevance toggle to each practice.
+             * Added .content-disabled to widget rows if practice.relevant is false.
              */
             renderAssessmentPage(domainId) {
                 const domain = state.assessmentData[domainId];
@@ -1448,16 +1554,43 @@ class Domain {
                             // --- SECURE MODIFICATION: Use .textContent for untrusted data ---
                             const cellInfo = document.createElement('td');
                             cellInfo.colSpan = 5;
-                            cellInfo.className = "pt-4 pb-2 px-4 border-b-0";
+                            // === MODIFIED v1.6: Added relative positioning ===
+                            cellInfo.className = "pt-4 pb-2 px-4 border-b-0 relative";
+
+                            // === NEW v1.6: Add Practice Relevance Toggle ===
+                            const toggleContainer = document.createElement('div');
+                            toggleContainer.className = "absolute top-4 right-4";
+                            toggleContainer.innerHTML = `
+                                <label class="flex items-center cursor-pointer">
+                                    <span class="text-xs font-medium text-slate-600 mr-2">Relevant</span>
+                                    <div class="relative">
+                                        <input type="checkbox" class="sr-only peer practice-relevance-toggle" data-id="${practice.id}" data-field="relevant" ${practice.relevant ? 'checked' : ''}>
+                                        <div class="w-11 h-6 bg-slate-400 rounded-full peer-checked:bg-blue-600"></div>
+                                        <div class="absolute top-0.5 left-[2px] bg-white w-5 h-5 rounded-full transition-all peer-checked:translate-x-full"></div>
+                                    </div>
+                                </label>
+                            `;
+                            cellInfo.appendChild(toggleContainer);
+                            // === END NEW v1.6 ===
 
                             const slugDiv = document.createElement('div');
-                            slugDiv.className = "font-semibold text-slate-800";
+                            slugDiv.className = "font-semibold text-slate-800 pr-32"; // Added padding-right
                             slugDiv.textContent = practice.slug; // Safe
+                            
+                            if (!practice.relevant) {
+                                slugDiv.classList.add('line-through', 'text-slate-400');
+                            }
+                            
                             cellInfo.appendChild(slugDiv);
 
                             const textDiv = document.createElement('div');
-                            textDiv.className = "text-slate-600 mt-1";
+                            textDiv.className = "text-slate-600 mt-1 pr-32"; // Added padding-right
                             textDiv.textContent = practice.text; // Safe
+                            
+                            if (!practice.relevant) {
+                                textDiv.classList.add('line-through', 'text-slate-400');
+                            }
+                            
                             cellInfo.appendChild(textDiv);
                             
                             rowInfo.appendChild(cellInfo);
@@ -1466,6 +1599,9 @@ class Domain {
 
                             // Row 2: Top Widgets
                             const rowWidgets1 = document.createElement('tr');
+                            // === NEW v1.6: Add dataset and class for disabling ===
+                            rowWidgets1.dataset.practiceRowId = practice.id;
+                            if (!practice.relevant) rowWidgets1.classList.add('content-disabled');
                             
                             // Col 1: Current Maturity
                             const cellCurrent = document.createElement('td');
@@ -1518,11 +1654,18 @@ class Domain {
                             // Row 3: Bottom Widgets (Planning ONLY)
                             if (state.appMode === 'planning') {
                                 const rowWidgets2 = document.createElement('tr');
+                                // === NEW v1.6: Add dataset and class for disabling ===
+                                rowWidgets2.dataset.practiceRowId = practice.id;
+                                if (!practice.relevant) rowWidgets2.classList.add('content-disabled');
 
                                 const cellTarget = document.createElement('td');
                                 cellTarget.className = "pb-4 pl-4 w-[180px]";
                                 cellTarget.innerHTML = `<div class="widget-label" title="Your target score">Target level</div>`;
-                                cellTarget.appendChild(view.createTargetMaturityWidget(practice));
+                                
+                                const targetWidget = view.createTargetMaturityWidget(practice); // Create it
+                                view.checkTargetScoreWarning(practice, targetWidget); // Check it
+                                cellTarget.appendChild(targetWidget); // Append it
+                                
                                 rowWidgets2.appendChild(cellTarget);
 
                                 const cellTargetDate = document.createElement('td');
@@ -1566,11 +1709,12 @@ class Domain {
                     details.appendChild(maturityGroupsContainer);
 
                     // Add the subtotal element
+                    // === MODIFIED v1.6: This calculation now respects practice.relevant ===
                     const { 
                         totalScore: objTotalScore, 
                         totalMax: objTotalMax,
                         totalAssessed: objTotalAssessed,
-                        totalPractices: objTotalPractices,
+                        totalPractices: objTotalPractices, // This is now count of *relevant* practices
                         percent: objPercent,
                         assessmentCompletion: objCompletion
                     } = objective.calculateScores();
@@ -1590,7 +1734,8 @@ class Domain {
 
             /**
              * Renders the priorities planning sheet.
-             * SECURE: Uses .textContent for all user data (practice slug, notes, etc.)
+             * --- MODIFIED v1.6 ---
+             * Now filters out practices where practice.relevant is false.
              */
             renderPrioritiesPage() {
                 dom.prioritiesTableBody.innerHTML = ''; // Clear old data
@@ -1598,10 +1743,13 @@ class Domain {
                 let priorityItems = [];
                 for (const domainId in state.assessmentData) {
                     const domain = state.assessmentData[domainId];
-                    if (domain.relevant === false) continue; // Skip irrelevant
+                    if (domain.relevant === false) continue; // Skip irrelevant domains
                     
                     domain.objectives.forEach(objective => {
                         objective.practices.forEach(practice => {
+                            // === NEW v1.6: Skip irrelevant practices ===
+                            if (!practice.relevant) return; 
+
                             const currentScore = utils.parseScore(practice.score);
                             const targetScore = utils.parseScore(practice.targetScore);
                             
@@ -1677,7 +1825,7 @@ class Domain {
                     const cell = row.insertCell();
                     cell.colSpan = 9;
                     cell.className = "p-6 text-center text-slate-500";
-                    cell.textContent = "No priority items found from relevant domains. (Ensure 'Target' score is higher than 'Current' score).";
+                    cell.textContent = "No priority items found from relevant domains. (Ensure 'Target' score is higher than 'Current' score on relevant practices).";
                     return;
                 }
 
@@ -1924,12 +2072,16 @@ class Domain {
             
             /**
              * Updates all progress bars and styling in the sidebar.
+             * --- MODIFIED v1.6 ---
+             * This now uses Domain.calculateScores() which correctly
+             * accounts for practice.relevant.
              */
             updateSidebarProgress() {
                 window.CMM_DATA.domains.forEach(domainData => {
                     const domain = state.assessmentData[domainData.id];
                     if (!domain) return;
                     
+                    // This now returns completion % based on *relevant* practices
                     const { assessmentCompletion } = domain.calculateScores();
                     const percent = assessmentCompletion.toFixed(0);
                     
@@ -1948,11 +2100,15 @@ class Domain {
 
             /**
              * Updates the summary block on the assessment page.
+             * --- MODIFIED v1.6 ---
+             * This now uses Domain.calculateScores() which correctly
+             * accounts for practice.relevant.
              */
             updateAssessmentSummary(domainId) {
                 const domain = state.assessmentData[domainId];
                 if (!domain) return;
                 
+                // These values are now based on *relevant* practices
                 const { totalScore, totalMax, percent, assessmentCompletion } = domain.calculateScores();
                 
                 dom.assessmentSummary.innerHTML = `
@@ -1986,16 +2142,20 @@ class Domain {
 
             /**
              * Updates the subtotal for a single objective.
+             * --- MODIFIED v1.6 ---
+             * This now uses Objective.calculateScores() which correctly
+             * accounts for practice.relevant.
              */
             updateObjectiveSubtotal(objective) {
                 const subtotalEl = document.querySelector(`div[data-objective-id="${objective.name}"]`);
                 if (!subtotalEl) return;
                 
+                // These values are now based on *relevant* practices
                 const { 
                     totalScore: objTotalScore, 
                     totalMax: objTotalMax,
                     totalAssessed: objTotalAssessed,
-                    totalPractices: objTotalPractices,
+                    totalPractices: objTotalPractices, // This is now count of *relevant* practices
                     percent: objPercent,
                     assessmentCompletion: objCompletion
                 } = objective.calculateScores();
@@ -2021,7 +2181,51 @@ class Domain {
             },
 
             /**
+             * Checks a practice's scores and applies/removes the warning state
+             * from the target widget if the target is lower than the current score.
+             */
+            checkTargetScoreWarning(practice, targetWidgetElement) {
+                const currentScore = utils.parseScore(practice.score);
+                const targetScore = utils.parseScore(practice.targetScore);
+                
+                const widget = targetWidgetElement; 
+                if (!widget) return; // Safety check
+
+                const warningTitle = "Target level should be greater than or equal to the Current level.";
+                const isWarning = (state.appMode === 'planning' && targetScore !== null && currentScore !== null && targetScore < currentScore);
+
+                if (isWarning) {
+                    widget.classList.add('widget-warning');
+                    widget.setAttribute('title', warningTitle); // Set on parent
+                    
+                    // === NEW FIX ===
+                    // Also set on all child dots, overriding their specific titles
+                    widget.querySelectorAll('.target-dot').forEach(dot => {
+                        dot.setAttribute('title', warningTitle);
+                    });
+                    // === END NEW FIX ===
+
+                } else {
+                    widget.classList.remove('widget-warning');
+                    widget.removeAttribute('title'); // Remove from parent
+                    
+                    // === NEW FIX ===
+                    // Restore original titles on child dots
+                    widget.querySelectorAll('.target-dot').forEach(dot => {
+                        const scoreValue = dot.dataset.score;
+                        // Find the title from the SCORE_LEVELS constant
+                        const level = SCORE_LEVELS.find(s => s.value == scoreValue);
+                        const originalTitle = level ? level.title : '';
+                        dot.setAttribute('title', `Target: ${originalTitle}`);
+                    });
+                    // === END NEW FIX ===
+                }
+            },
+
+            /**
              * Gathers data, builds a CSV, and triggers a download.
+             * --- MODIFIED v1.6 ---
+             * Now filters out practices where practice.relevant is false.
              */
             exportPrioritiesToCSV() {
                 console.log('Exporting priorities to CSV...');
@@ -2034,6 +2238,9 @@ class Domain {
                     
                     domain.objectives.forEach(objective => {
                         objective.practices.forEach(practice => {
+                            // === NEW v1.6: Skip irrelevant practices ===
+                            if (!practice.relevant) return;
+
                             const currentScore = utils.parseScore(practice.score);
                             const targetScore = utils.parseScore(practice.targetScore);
                             
@@ -2075,6 +2282,7 @@ class Domain {
                         case 'date':
                             valA = pA.targetDate || '';
                             valB = pB.targetDate || '';
+                            if (valA === '' && valB === '') return 0; // === FIX v1.6.1 ===
                             if (valA === '' && valB !== '') return 1;
                             if (valA !== '' && valB === '') return -1;
                             break;
@@ -2138,7 +2346,7 @@ class Domain {
             exportResultsToJSON() {
                 console.log('Exporting results to JSON...');
                 
-                // 1. Get data
+                // 1. Get data (which now includes practice.relevant)
                 const userData = store.getUserDataForSave();
                 
                 // NOTE: In a real app, you would pre-calculate this hash
@@ -2251,6 +2459,8 @@ class Domain {
             
             /**
              * Main change handler for the content area (uses event delegation).
+             * --- MODIFIED v1.6 ---
+             * Added logic to handle practice relevance toggle.
              */
             handleContentChange(e) {
                 const target = e.target;
@@ -2263,6 +2473,45 @@ class Domain {
                     const context = store.updatePracticeField(practiceId, field, value);
                     
                     if (context) {
+                        // === NEW v1.6: Handle relevance toggle UI ===
+                        if (field === 'relevant') {
+                            const practiceRows = document.querySelectorAll(`[data-practice-row-id="${practiceId}"]`);
+                            practiceRows.forEach(row => {
+                                row.classList.toggle('content-disabled', !value);
+                            });
+                            
+                            // === NEW MODIFICATION ===
+                            // Find the practice info cell (slug/text)
+                            const cellInfo = target.closest('td'); 
+                            if (cellInfo) {
+                                // Find the slug and text divs inside this cell
+                                const slugDiv = cellInfo.querySelector('.font-semibold.text-slate-800');
+                                const textDiv = cellInfo.querySelector('.text-slate-600.mt-1');
+                                
+                                if (slugDiv) {
+                                    slugDiv.classList.toggle('line-through', !value);
+                                    slugDiv.classList.toggle('text-slate-400', !value);
+                                }
+                                if (textDiv) {
+                                    textDiv.classList.toggle('line-through', !value);
+                                    textDiv.classList.toggle('text-slate-400', !value);
+                                }
+                            }
+                            // === END NEW MODIFICATION ===
+                            
+                            // Recalculate sidebar
+                            view.updateSidebarProgress();
+                            
+                            // If on dashboard or priorities, they need a full re-render
+                            if (state.activePage === 'dashboard') {
+                                view.renderDashboardPage();
+                            }
+                            if (state.activePage === 'priorities') {
+                                view.renderPrioritiesPage();
+                            }
+                        }
+                        // === END NEW v1.6 ===
+
                         // Update UI based on change
                         if (field === 'impact' || field === 'loe') {
                             const priorityDisplay = document.querySelector(`[data-priority-id="${context.practice.id}"]`);
@@ -2338,6 +2587,18 @@ class Domain {
                 if (context) {
                     // Update UI
                     view.updateDotWidget(widget, finalScore);
+                    
+                    // === MODIFIED LOGIC ===
+                    // Find the practice's target widget (even if we clicked the current widget)
+                    const practiceRow = widget.closest('tbody');
+                    if (practiceRow) {
+                        const targetWidget = practiceRow.querySelector(`.target-widget[data-id="${practiceId}"]`);
+                        if (targetWidget) {
+                            view.checkTargetScoreWarning(context.practice, targetWidget);
+                        }
+                    }
+                    // === END MODIFIED LOGIC ===
+
                     if (context.domain) {
                         view.updateAssessmentSummary(context.domain.id);
                     }
@@ -2361,6 +2622,8 @@ class Domain {
                     details.open = (actionId === 'expand-all');
                 });
             },
+
+
 
             handlePrioritySortClick(header) {
                 const newColumn = header.dataset.sort;
@@ -2431,7 +2694,7 @@ class Domain {
                         const importedVersion = importedData.toolVersion;
                         if (!importedVersion) {
                             // Legacy format (pre-1.3)
-                            if (!confirm('This appears to be an older export file. Importing it may result in data loss for any new fields. Continue?')) {
+                            if (!confirm('This appears to be an older export file. Importing it may result in data loss for any new fields (like practice relevance). Continue?')) {
                                 e.target.value = null; // Reset file input
                                 return;
                             }
@@ -2441,7 +2704,7 @@ class Domain {
                         } else if (parseFloat(importedVersion) < parseFloat(CURRENT_TOOL_VERSION)) {
                             // Older, but versioned format
                             console.log(`Importing data from older version ${importedVersion}. Migration logic would run here if needed.`);
-                            // No migration logic needed yet, but this is where it would go.
+                            // e.g., if v1.5 imported, the new `relevant` field will just get the default `true`
                         }
                         // --- END VERSION CHECKING ---
 
@@ -2483,14 +2746,13 @@ class Domain {
             dom.mainContent.addEventListener('change', events.handleContentChange);
             dom.mainContent.addEventListener('click', events.handleContentClick);
 
-            // === NEW: Sidebar Listeners ===
+            // --- Sidebar Listeners ---
             dom.assessmentNameInput.addEventListener('change', events.handleAssessmentNameChange);
             dom.exportButton.addEventListener('click', view.exportResultsToJSON);
             dom.importButton.addEventListener('change', events.handleImportChange);
 
-            // === NEW CODE: Handle Browser Back/Forward ===
+            // --- Handle Browser Back/Forward ---
             window.addEventListener('popstate', events.handlePopState);
-            // === END NEW CODE ===
         }
 
         /**
