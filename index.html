@@ -72,6 +72,9 @@
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.3.7/build/pdfmake.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.3.7/build/vfs_fonts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas2svg@1.0.16/canvas2svg.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -289,6 +292,81 @@
             border-color: var(--brand-blue);
         }
 
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background-color: white !important;
+                color: black !important;
+            }
+
+            aside,
+            nav,
+            #main-nav,
+            .domain-relevance-toggle,
+            button.no-print,
+            .print-hide {
+                display: none !important;
+            }
+
+            main {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+            }
+
+            .page {
+                display: none !important;
+            }
+
+            #page-report {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .report-section {
+                page-break-inside: avoid;
+                margin-bottom: 2rem;
+            }
+
+            .domain-report-page {
+                page-break-before: always;
+            }
+
+            .domain-report-page:first-child {
+                page-break-before: auto;
+            }
+
+            .report-card {
+                border: 1px solid #e2e8f0;
+                border-radius: 0.5rem;
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            canvas {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+
+            a[href]:after {
+                content: " (" attr(href) ")";
+                font-size: 0.8em;
+            }
+
+            /* Force display for elements inside the report even if parents are hidden or flex */
+            #report-content {
+                display: block !important;
+            }
+        }
+
         .maturity-dot.selected {
             border-color: var(--brand-blue-dark);
             transform: scale(1.1);
@@ -489,7 +567,7 @@
                 </li>
 
                 <li>
-                    <a href="#" class="nav-link flex items-center space-x-2 rounded-md py-2 px-3 hover:bg-sidebar-hover"
+                    <a href="#" class="nav-link flex items-center space-x-2 rounded-md py-2 px-3 hover:bg-sidebar-hover no-print"
                         data-page="about">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-5 h-5 flex-shrink-0"
                             fill="none">
@@ -499,6 +577,16 @@
                             <circle cx="1" cy="1" r="1" transform="matrix(1 0 0 -1 11 9)" fill="currentColor"></circle>
                         </svg>
                         <span>About</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="#" class="nav-link flex items-center space-x-2 rounded-md py-2 px-3 hover:bg-sidebar-hover text-blue-400 font-semibold no-print"
+                        data-page="report">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 flex-shrink-0">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                        <span>Report</span>
                     </a>
                 </li>
 
@@ -869,6 +957,31 @@
                                 class="font-semibold underline">hello@cosive.com</a>.
                         </p>
                     </div>
+                </div>
+            </div>
+            <div id="page-report" class="page max-w-6xl mx-auto">
+                <div class="bg-white p-8 rounded-lg shadow-md mb-6 no-print">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-3xl font-bold text-slate-800">Full Assessment Report</h2>
+                        <div class="flex space-x-3">
+                            <button onclick="window.print()" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg flex items-center space-x-2 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.844 2.4 16.228a.75.75 0 0 0-.113 1.248l4.815 3.897a.75.75 0 0 0 .994.039l4.566-3.697a.75.75 0 0 1 .979 0l4.566 3.697a.75.75 0 0 0 .994-.039l4.815-3.897a.75.75 0 0 0-.113-1.247l-4.32-2.384m-12.18 0 4.32 2.384a.75.75 0 0 0 .713 0l4.32-2.384m-12.18 0 6.09-3.36a.75.75 0 0 1 .713 0l6.09 3.36M12 2.25l7.5 4.14a.75.75 0 0 1 0 1.308l-7.5 4.14a.75.75 0 0 1-.713 0l-7.5-4.14a.75.75 0 0 1 0-1.308L12 2.25Z" />
+                                </svg>
+                                <span>Browser Print</span>
+                            </button>
+                            <button onclick="CTICMMTool.utils.exportToPDF()" class="bg-brand-blue hover:bg-brand-blue-dark text-white font-bold py-2 px-6 rounded-lg shadow-lg flex items-center space-x-2 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                </svg>
+                                <span>Download PDF</span>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-slate-600">This page generates a comprehensive report of your assessment across all domains. Use the <strong>Download PDF</strong> button for a programmatically generated file, or <strong>Browser Print</strong> if you prefer the browser's default PDF output.</p>
+                </div>
+                <div id="report-content" class="bg-white p-0 sm:p-8 rounded-lg shadow-none sm:shadow-md">
+                    <!-- Report content will be injected here -->
                 </div>
             </div>
         </main>
@@ -1288,6 +1401,8 @@
                 pagePriorities: document.getElementById('page-priorities'),
                 pageData: document.getElementById('page-data'), // NEW PAGE
                 pageAbout: document.getElementById('page-about'),
+                pageReport: document.getElementById('page-report'),
+                reportContent: document.getElementById('report-content'),
                 // Other elements
                 assessmentTitle: document.getElementById('assessment-title'),
                 assessmentDate: document.getElementById('assessment-date'),
@@ -1403,6 +1518,804 @@
                         result = `"${result}"`; // Wrap in quotes
                     }
                     return result;
+                },
+
+                /**
+                 * Programmatically exports the report-content element to a PDF.
+                 * Uses the pdfmake library for high-quality, professional reports.
+                 */
+                async exportToPDF() {
+                    console.log('Exporting report to PDF using pdfmake...');
+                    
+                    const { domainScores, overallPercent, overallTargetPercent, overallAssessmentCompletion, grandTotalAssessed, grandTotalPractices } = utils.calculateAllScores();
+                    const assessmentName = (dom.assessmentNameInput && dom.assessmentNameInput.value) || 'CTI-CMM-Assessment';
+                    const today = new Date().toLocaleDateString();
+
+                    // Simple progress feedback
+                    const originalButton = document.activeElement;
+                    const originalText = originalButton ? originalButton.innerHTML : null;
+                    if (originalButton && originalButton.tagName === 'BUTTON') {
+                        originalButton.disabled = true;
+                        originalButton.innerHTML = '<span>Generating...</span>';
+                    }
+
+                    try {
+                        if (typeof pdfMake === 'undefined') {
+                            throw new Error('pdfMake library is not loaded.');
+                        }
+
+                        // Helper to get chart images as base64
+                        const getChartImage = (id) => {
+                            const canvas = document.getElementById(id);
+                            return canvas ? canvas.toDataURL('image/png') : null;
+                        };
+
+                        // Helper to get Chart.js as SVG string using canvas2svg proxy
+                        const getChartSvg = (id) => {
+                            const canvas = document.getElementById(id);
+                            if (!canvas) {
+                                console.warn(`Canvas with ID "${id}" not found.`);
+                                return null;
+                            }
+                            
+                            // Get the Chart.js instance associated with this canvas
+                            let chart = Chart.getChart(canvas);
+                            
+                            // Fallback: Check state.chartInstances if Chart.getChart fails
+                            if (!chart) {
+                                if (id === 'reportRadarChart') chart = state.chartInstances.reportRadar;
+                                if (id === 'reportDoughnutChart') chart = state.chartInstances.reportDoughnut;
+                            }
+
+                            if (!chart) {
+                                console.warn(`Chart.js instance not found for canvas ID "${id}".`);
+                                return null;
+                            }
+
+                            try {
+                                if (typeof C2S !== 'function') {
+                                    console.error('canvas2svg (C2S) library is not loaded.');
+                                    return null;
+                                }
+
+                                // Create a mock canvas context using canvas2svg
+                                // Use the original canvas dimensions
+                                const svgContext = new C2S({
+                                    width: canvas.width,
+                                    height: canvas.height
+                                });
+                                
+                                // FORCE dimensions on the context if C2S didn't pick them up
+                                svgContext.width = canvas.width;
+                                svgContext.height = canvas.height;
+                                
+                                // Chart.js 4+ expects a real element or something very close to it.
+                                // We use a real (but detached) canvas to satisfy all DOM-interface checks
+                                // like getComputedStyle and parentNode traversal.
+                                const mockCanvas = document.createElement('canvas');
+                                mockCanvas.width = canvas.width;
+                                mockCanvas.height = canvas.height;
+                                mockCanvas.style.width = canvas.width + 'px';
+                                mockCanvas.style.height = canvas.height + 'px';
+                                mockCanvas.style.display = 'none';
+                                
+                                // Proxy the getContext method to return our C2S svgContext
+                                const originalGetContext = mockCanvas.getContext;
+                                mockCanvas.getContext = function(type) {
+                                    if (type === '2d') return svgContext;
+                                    return originalGetContext.apply(this, arguments);
+                                };
+                                
+                                // FORCE dimensions on the mockCanvas to match
+                                // Some browsers/Chart.js versions might use these instead of style/width/height
+                                Object.defineProperty(mockCanvas, 'clientWidth', { get: () => canvas.width });
+                                Object.defineProperty(mockCanvas, 'clientHeight', { get: () => canvas.height });
+                                Object.defineProperty(mockCanvas, 'width', { get: () => canvas.width, set: () => {} });
+                                Object.defineProperty(mockCanvas, 'height', { get: () => canvas.height, set: () => {} });
+                                
+                                // Link back to our mock canvas
+                                svgContext.canvas = mockCanvas;
+
+                                // Link the C2S internal __font to the property
+                                svgContext.__font = '12px Arial';
+
+                                // FIX: canvas2svg's __parseFont regex often fails on Chart.js font strings
+                                // like 'normal 12px "Helvetica Neue", Helvetica, Arial, sans-serif'
+                                // We'll patch fillText to ensure the font is always in a format it likes,
+                                // or just fix the font property itself.
+                                const originalFillText = svgContext.fillText;
+                                svgContext.fillText = function(text, x, y, maxWidth) {
+                                    // If font is set but looks like it might break the regex, simplify it.
+                                    if (this.font) {
+                                        // canvas2svg's regex for font parsing is very strict.
+                                        // It expects something like: "italic small-caps bold 12px Arial"
+                                        // Chart.js often sends: "normal 12px 'Helvetica Neue', Helvetica, Arial, sans-serif"
+                                        
+                                        // 1. Remove all commas and everything after the first font family
+                                        let simplifiedFont = this.font;
+                                        if (simplifiedFont.includes(',')) {
+                                            simplifiedFont = simplifiedFont.split(',')[0].trim();
+                                        }
+                                        
+                                        // 2. Remove any trailing semicolons
+                                        simplifiedFont = simplifiedFont.replace(/;$/, '');
+                                        
+                                        // 3. Ensure quotes are handled correctly (canvas2svg regex might struggle with quotes)
+                                        simplifiedFont = simplifiedFont.replace(/['"]/g, '');
+
+                                        // 4. Force a basic structure if it's too short or too long
+                                        // If it's just "12px Helvetica", it might still fail if it expects more parts.
+                                        // But usually "12px Helvetica" is fine for most browsers.
+                                        
+                                        // 5. Ensure "px" is present for the size
+                                        if (/\d+$/.test(simplifiedFont)) {
+                                            simplifiedFont += 'px Arial';
+                                        } else if (!/\d+p[tx]/.test(simplifiedFont)) {
+                                            // Fallback if no size found
+                                            simplifiedFont = '12px Arial';
+                                        }
+                                        
+                                        this.font = simplifiedFont;
+                                    }
+                                    return originalFillText.apply(this, arguments);
+                                };
+
+                                // Also patch font property setter directly if possible
+                                // We use a different name for the backing field to avoid conflicts
+                                Object.defineProperty(svgContext, 'font', {
+                                    set: function(val) {
+                                        let simplifiedFont = val;
+                                        if (simplifiedFont && typeof simplifiedFont === 'string') {
+                                            if (simplifiedFont.includes(',')) simplifiedFont = simplifiedFont.split(',')[0].trim();
+                                            simplifiedFont = simplifiedFont.replace(/;$/, '').replace(/['"]/g, '');
+                                            if (/\d+$/.test(simplifiedFont)) simplifiedFont += 'px Arial';
+                                            // canvas2svg internal state uses __font
+                                            this.__font = simplifiedFont;
+                                        }
+                                    },
+                                    get: function() {
+                                        return this.__font || '12px Arial';
+                                    },
+                                    configurable: true
+                                });
+
+                                // Also patch strokeText just in case
+                                const originalStrokeText = svgContext.strokeText;
+                                svgContext.strokeText = function(text, x, y, maxWidth) {
+                                    if (this.font) {
+                                        let simplifiedFont = this.font;
+                                        if (simplifiedFont.includes(',')) simplifiedFont = simplifiedFont.split(',')[0].trim();
+                                        simplifiedFont = simplifiedFont.replace(/;$/, '').replace(/['"]/g, '');
+                                        this.font = simplifiedFont;
+                                    }
+                                    return originalStrokeText.apply(this, arguments);
+                                };
+
+                                // FIX: "Attempted to apply path command to node g"
+                                // canvas2svg.js:531 throws if it tries to add a command to a non-path node.
+                                // We'll patch beginPath, stroke, and fill to ensure we're always on a path node.
+                                const originalBeginPath = svgContext.beginPath;
+                                svgContext.beginPath = function() {
+                                    // Let canvas2svg handle the original logic
+                                    originalBeginPath.apply(this, arguments);
+                                    
+                                    // Ensure we're ALWAYS on a <path> node when a path starts
+                                    if (this.__currentElement.nodeName !== 'path') {
+                                        this.__currentElement = this.__createElement("path", {}, true);
+                                    }
+                                    
+                                    // CRITICAL: Reset the internal path string for the new path
+                                    this.__currentDefaultPath = "";
+                                };
+
+                                // FIX: RGBA parsing in canvas2svg is brittle
+                                // It fails on rgba(0,0,0,1) if it doesn't have spaces or if alpha is 1
+                                const sanitizeColor = (color) => {
+                                    if (typeof color !== 'string') return color;
+                                    // Handle Chart.js color objects or other non-string types if they leak through
+                                    if (!color || color === 'transparent') return 'rgba(0, 0, 0, 0)';
+                                    
+                                    // Ensure spaces after commas for canvas2svg regex
+                                    let sanitized = color.replace(/,(\S)/g, ', $1');
+                                    
+                                    // Ensure standard rgba(r, g, b, a) format
+                                    if (sanitized.includes('rgba')) {
+                                        const m = sanitized.match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/);
+                                        if (m) {
+                                            return `rgba(${m[1]}, ${m[2]}, ${m[3]}, ${m[4]})`;
+                                        }
+                                    } else if (sanitized.includes('rgb')) {
+                                        const m = sanitized.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
+                                        if (m) {
+                                            return `rgb(${m[1]}, ${m[2]}, ${m[3]})`;
+                                        }
+                                    }
+                                    return sanitized;
+                                };
+
+                                // Also patch the internal __applyStyleToCurrentElement if it exists
+                                // to ensure our sanitized colors are used even when canvas2svg does its own thing
+                                const originalApplyStyle = svgContext.__applyStyleToCurrentElement;
+                                if (typeof originalApplyStyle === 'function') {
+                                    svgContext.__applyStyleToCurrentElement = function(type) {
+                                        // type is "fill" or "stroke"
+                                        if (type === 'fill') this.fillStyle = sanitizeColor(this.fillStyle);
+                                        if (type === 'stroke') this.strokeStyle = sanitizeColor(this.strokeStyle);
+                                        return originalApplyStyle.apply(this, arguments);
+                                    };
+                                }
+
+                                Object.defineProperty(svgContext, 'fillStyle', {
+                                    set: function(val) { this.__fillStyle = sanitizeColor(val); },
+                                    get: function() { return this.__fillStyle || '#000000'; },
+                                    configurable: true
+                                });
+
+                                Object.defineProperty(svgContext, 'strokeStyle', {
+                                    set: function(val) { this.__strokeStyle = sanitizeColor(val); },
+                                    get: function() { return this.__strokeStyle || '#000000'; },
+                                    configurable: true
+                                });
+
+                                const originalStroke = svgContext.stroke;
+                                svgContext.stroke = function() {
+                                    // CRITICAL FIX: Only call original stroke if we are on a path.
+                                    if (this.__currentElement.nodeName !== 'path') {
+                                        this.__currentElement = this.__createElement("path", {}, true);
+                                    }
+
+                                    // Apply the path first to ensure we have geometry
+                                    if (this.__currentDefaultPath) {
+                                        this.__currentElement.setAttribute("d", this.__currentDefaultPath);
+                                    }
+
+                                    // IMPORTANT: canvas2svg's original stroke() might create a new element
+                                    // or reset attributes. We call it.
+                                    const result = originalStroke.apply(this, arguments);
+
+                                    // Apply the style manually to ensure it's captured on the current element
+                                    const color = sanitizeColor(this.strokeStyle);
+                                    if (color && typeof color === 'string') {
+                                        if (color.includes('rgba')) {
+                                            const m = color.match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/);
+                                            if (m) {
+                                                this.__currentElement.setAttribute('stroke', `rgb(${m[1]}, ${m[2]}, ${m[3]})`);
+                                                this.__currentElement.setAttribute('stroke-opacity', m[4]);
+                                            }
+                                        } else {
+                                            this.__currentElement.setAttribute('stroke', color);
+                                            this.__currentElement.setAttribute('stroke-opacity', '1');
+                                        }
+                                    }
+                                    
+                                    // Ensure width and dash are applied
+                                    this.__currentElement.setAttribute('stroke-width', this.lineWidth || 1);
+                                    this.__currentElement.setAttribute('stroke-linecap', this.lineCap || 'butt');
+                                    this.__currentElement.setAttribute('stroke-linejoin', this.lineJoin || 'miter');
+
+                                    return result;
+                                };
+
+                                const originalFill = svgContext.fill;
+                                svgContext.fill = function() {
+                                    // CRITICAL FIX: Only call original fill if we are on a path.
+                                    if (this.__currentElement.nodeName !== 'path') {
+                                        this.__currentElement = this.__createElement("path", {}, true);
+                                    }
+
+                                    // Geometry first
+                                    if (this.__currentDefaultPath) {
+                                        this.__currentElement.setAttribute("d", this.__currentDefaultPath);
+                                    }
+
+                                    // Apply the style manually
+                                    const color = sanitizeColor(this.fillStyle);
+                                    if (color && typeof color === 'string') {
+                                        if (color.includes('rgba')) {
+                                            const m = color.match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/);
+                                            if (m) {
+                                                this.__currentElement.setAttribute('fill', `rgb(${m[1]}, ${m[2]}, ${m[3]})`);
+                                                this.__currentElement.setAttribute('fill-opacity', m[4]);
+                                            }
+                                        } else {
+                                            this.__currentElement.setAttribute('fill', color);
+                                            this.__currentElement.setAttribute('fill-opacity', '1');
+                                        }
+                                    }
+                                    
+                                    // Call original
+                                    const result = originalFill.apply(this, arguments);
+                                    
+                                    return result;
+                                };
+
+                                // IMPORTANT: canvas2svg by default doesn't implement all 2D context methods.
+                                // If Chart.js calls a missing method, it might throw.
+                                
+                                // FIX: prevent crash when accessing __styles
+                                if (!svgContext.__styles) {
+                                    svgContext.__styles = {};
+                                }
+
+                                // PATCH: Intercept path commands to ensure they are captured on the current element
+                                ['moveTo', 'lineTo', 'bezierCurveTo', 'quadraticCurveTo', 'arc', 'arcTo', 'rect', 'closePath'].forEach(method => {
+                                    const original = svgContext[method];
+                                    if (typeof original === 'function') {
+                                        svgContext[method] = function() {
+                                            const res = original.apply(this, arguments);
+                                            // Sync the d attribute immediately
+                                            if (this.__currentElement && this.__currentElement.nodeName === 'path' && this.__currentDefaultPath) {
+                                                this.__currentElement.setAttribute("d", this.__currentDefaultPath);
+                                            }
+                                            return res;
+                                        };
+                                    }
+                                });
+
+                                // FIX: Prevent "Attempted to apply path command to node..." error globally
+                                svgContext.__applyCurrentDefaultPath = function() {
+                                    if (this.__currentElement.nodeName !== "path") {
+                                        // Instead of throwing, create a path and continue if we have data,
+                                        // or just return if we don't.
+                                        if (this.__currentDefaultPath) {
+                                            this.__currentElement = this.__createElement("path", {}, true);
+                                        } else {
+                                            return;
+                                        }
+                                    }
+                                    
+                                    // Original logic from canvas2svg:
+                                    // We need to check if __styles exists because it might be undefined
+                                    if (this.__styles) {
+                                        var keys = Object.keys(this.__styles), i;
+                                        for (i = 0; i < keys.length; i++) {
+                                            const styleType = keys[i];
+                                            this.__applyStyleToCurrentElement(styleType);
+                                            
+                                            // DOUBLE CHECK: Ensure the attributes are actually on the element
+                                            // canvas2svg's __applyStyleToCurrentElement is sometimes unreliable for rgba
+                                            if (styleType === 'fill') {
+                                                const color = sanitizeColor(this.fillStyle);
+                                                if (color && color.includes('rgba')) {
+                                                    const m = color.match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/);
+                                                    if (m) {
+                                                        this.__currentElement.setAttribute('fill', `rgb(${m[1]}, ${m[2]}, ${m[3]})`);
+                                                        this.__currentElement.setAttribute('fill-opacity', m[4]);
+                                                    }
+                                                }
+                                            }
+                                            if (styleType === 'stroke') {
+                                                const color = sanitizeColor(this.strokeStyle);
+                                                if (color && color.includes('rgba')) {
+                                                    const m = color.match(/rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d?\.?\d*)\s*\)/);
+                                                    if (m) {
+                                                        this.__currentElement.setAttribute('stroke', `rgb(${m[1]}, ${m[2]}, ${m[3]})`);
+                                                        this.__currentElement.setAttribute('stroke-opacity', m[4]);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (this.__currentDefaultPath) {
+                                        this.__currentElement.setAttribute("d", this.__currentDefaultPath);
+                                    }
+                                };
+
+                                const missingMethods = ['setLineDash', 'getLineDash', 'setTransform', 'resetTransform'];
+                                missingMethods.forEach(m => {
+                                    if (typeof svgContext[m] !== 'function') {
+                                        svgContext[m] = function() {};
+                                    }
+                                });
+                                
+                                // Create a NEW chart instance for the SVG context
+                                // Deep clone the config to avoid side effects
+                                const config = JSON.parse(JSON.stringify(chart.config._config));
+                                
+                                // Clean up config for export
+                                config.options = config.options || {};
+                                config.options.animation = false;
+                                config.options.responsive = false;
+                                config.options.maintainAspectRatio = false;
+                                
+                                // Explicitly handle Chart.js 3+ transitions
+                                config.options.transitions = {
+                                    active: { animation: { duration: 0 } }
+                                };
+                                
+                                // Disable device pixel ratio to avoid scaling issues in SVG
+                                config.options.devicePixelRatio = 1;
+                                
+                                // NEW: For Chart.js 4, also ensure these are disabled
+                                config.options.responsive = false;
+                                config.options.animation = false;
+
+                                // Create a temporary chart using the mock canvas
+                                const tempChart = new Chart(mockCanvas, config);
+                                
+                                // FORCE fixed dimensions in the chart instance itself
+                                tempChart.width = canvas.width;
+                                tempChart.height = canvas.height;
+                                
+                                // NEW: We must ensure the chart is actually rendered to the context.
+                                // In Chart.js 4+, it might be async even with animation: false.
+                                // We use render() and update() to be sure.
+                                try {
+                                    // For doughnut charts, sometimes the 'center' is miscalculated if responsive is true
+                                    // but we set it to false above. Let's ensure the chart is laid out for the fixed size.
+                                    tempChart.resize(canvas.width, canvas.height);
+                                    tempChart.update('none');
+                                } catch (updateError) {
+                                    console.warn('tempChart.update failed, trying render():', updateError);
+                                    tempChart.render();
+                                }
+                                
+                                // Get the SVG string
+                                const svgString = svgContext.getSerializedSvg(true);
+                                
+                                // Check if SVG string has width/height/viewBox
+                                // If not, add them to help pdfmake scaling
+                                let processedSvg = svgString;
+                                if (processedSvg && !processedSvg.includes('viewBox')) {
+                                    const openingTag = `<svg width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}" xmlns="http://www.w3.org/2000/svg"`;
+                                    processedSvg = processedSvg.replace('<svg', openingTag);
+                                }
+                                
+                                // Cleanup
+                                tempChart.destroy();
+                                
+                                return processedSvg;
+                            } catch (e) {
+                                console.error('Failed to generate SVG for chart:', id, e);
+                                return null;
+                            }
+                        };
+
+                        // Ensure charts are rendered before capturing
+                        // Since we disabled animations, they should be ready, but we'll add a tiny delay just in case
+                        await new Promise(resolve => setTimeout(resolve, 100));
+
+                        const radarSvg = getChartSvg('reportRadarChart');
+                        const doughnutSvg = getChartSvg('reportDoughnutChart');
+                        
+                        console.log('Radar SVG captured:', !!radarSvg);
+                        console.log('Doughnut SVG captured:', !!doughnutSvg);
+
+                        if (!radarSvg || !doughnutSvg) {
+                            console.warn('One or more executive summary charts failed to capture. Re-rendering report page to ensure they exist.');
+                            view.renderReportPage();
+                            await new Promise(resolve => setTimeout(resolve, 300));
+                        }
+
+                        // Re-capture if they were missing
+                        const finalRadarSvg = radarSvg || getChartSvg('reportRadarChart');
+                        const finalDoughnutSvg = doughnutSvg || getChartSvg('reportDoughnutChart');
+
+                        // Helper to create the bubble widget as an SVG using canvas2svg
+                        const createBubbleWidgetSvg = (score, type = 'current') => {
+                            const intScore = utils.parseScore(score);
+                            const activeColor = type === 'current' ? BRAND_COLORS.blue : BRAND_COLORS.green;
+                            const activeColorDark = type === 'current' ? BRAND_COLORS.blueDark : BRAND_COLORS.greenDark;
+                            const inactiveColor = '#cbd5e1'; // slate-300
+                            const textColor = '#64748b'; // slate-500
+                            
+                            const svgContext = new C2S({
+                                width: 130,
+                                height: 36
+                            });
+                            
+                            let x = 15;
+                            const y = 14;
+                            const dotSize = 18;
+                            const lineLength = 10;
+                            
+                            SCORE_LEVELS.forEach((s, index) => {
+                                const isActive = intScore !== null && s.value <= intScore;
+                                const isSelected = intScore !== null && s.value === intScore;
+                                
+                                // Draw connecting line BEFORE dot (except for first dot)
+                                if (index > 0) {
+                                    const lineActive = intScore !== null && s.value <= intScore;
+                                    svgContext.beginPath();
+                                    svgContext.moveTo(x - lineLength - (dotSize / 2), y);
+                                    svgContext.lineTo(x - (dotSize / 2), y);
+                                    svgContext.lineWidth = 2;
+                                    svgContext.strokeStyle = lineActive ? activeColor : inactiveColor;
+                                    svgContext.stroke();
+                                }
+                                
+                                // Draw Dot
+                                svgContext.beginPath();
+                                svgContext.arc(x, y, 8, 0, 2 * Math.PI);
+                                svgContext.fillStyle = isActive ? activeColor : '#ffffff';
+                                svgContext.fill();
+                                
+                                svgContext.beginPath();
+                                svgContext.arc(x, y, 8, 0, 2 * Math.PI);
+                                svgContext.lineWidth = 2;
+                                svgContext.strokeStyle = isSelected ? activeColorDark : (isActive ? activeColor : inactiveColor);
+                                svgContext.stroke();
+                                
+                                // Draw Label
+                                svgContext.font = isSelected ? 'bold 10px Arial' : '10px Arial';
+                                svgContext.fillStyle = textColor;
+                                svgContext.textAlign = 'center';
+                                svgContext.fillText(s.value.toString(), x, y + 18);
+                                
+                                x += dotSize + lineLength;
+                            });
+                            
+                            const svgString = svgContext.getSerializedSvg(true);
+                            // Ensure it has dimensions for pdfmake
+                            return svgString.replace('<svg', `<svg width="130" height="36" viewBox="0 0 130 36"`);
+                        };
+
+                        const docDefinition = {
+                            pageSize: 'A4',
+                            pageMargins: [40, 60, 40, 60],
+                            info: {
+                                title: assessmentName,
+                                author: 'CTI-CMM Assessment Tool',
+                                subject: 'CTI Maturity Model Assessment Report',
+                                keywords: 'CTI, CMM, Maturity, Cybersecurity, Report',
+                            },
+                            content: [
+                                // Header
+                                {
+                                    columns: [
+                                        {
+                                            stack: [
+                                                { text: assessmentName, style: 'reportTitle' },
+                                                { text: 'CTI Maturity Model (CTI-CMM) Full Report', style: 'reportSubtitle' }
+                                            ]
+                                        },
+                                        {
+                                            stack: [
+                                                { text: 'Report Generated', alignment: 'right', color: '#64748b', fontSize: 10 },
+                                                { text: today, alignment: 'right', bold: true, color: '#334155' }
+                                            ]
+                                        }
+                                    ],
+                                    margin: [0, 0, 0, 20]
+                                },
+                                { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 532, y2: 0, lineWidth: 2, lineColor: '#e2e8f0' }], margin: [0, 0, 0, 30] },
+
+                                // Executive Summary
+                                { text: '1. Report Summary', style: 'sectionHeader', pageBreak: 'none', outline: "true" },
+                                {
+                                    columns: [
+                                        {
+                                            width: '*',
+                                            stack: [
+                                                { text: 'Maturity Profile', style: 'cardTitle' },
+                                                finalRadarSvg ? { svg: finalRadarSvg, fit: [240, 240], alignment: 'center' } : { text: 'Chart not available', alignment: 'center', margin: [0, 50] }
+                                            ],
+                                            margin: [0, 0, 10, 0]
+                                        },
+                                        {
+                                            width: '*',
+                                            stack: [
+                                                { text: 'Assessment Completion', style: 'cardTitle' },
+                                                finalDoughnutSvg ? { svg: finalDoughnutSvg, fit: [180, 180], alignment: 'center' } : { text: 'Chart not available', alignment: 'center', margin: [0, 50] },
+                                                { text: `${overallAssessmentCompletion.toFixed(1)}%`, style: 'completionPercent' },
+                                                { text: 'OVERALL COMPLETION', style: 'completionLabel' },
+                                                { text: `${grandTotalAssessed} of ${grandTotalPractices} relevant practices assessed`, style: 'completionSubtext' }
+                                            ]
+                                        }
+                                    ],
+                                    margin: [0, 0, 0, 30]
+                                },
+
+                                // Summary Table
+                                {
+                                    table: {
+                                        headerRows: 1,
+                                        widths: ['*', 'auto', 'auto', 'auto'],
+                                        body: [
+                                            [
+                                                { text: 'Domain', style: 'tableHeader' },
+                                                { text: 'Completion', style: 'tableHeader', alignment: 'center' },
+                                                { text: 'Current %', style: 'tableHeader', alignment: 'center' },
+                                                state.appMode === 'planning' ? { text: 'Target %', style: 'tableHeader', alignment: 'center' } : { text: '', style: 'tableHeader' }
+                                            ],
+                                            ...domainScores.map(d => [
+                                                { text: d.name, style: d.relevant ? 'tableCell' : 'tableCellDisabled' },
+                                                { text: d.relevant ? `${d.assessmentCompletion.toFixed(0)}%` : '-', alignment: 'center', style: 'tableCell' },
+                                                { text: d.relevant ? `${d.percent.toFixed(1)}%` : '-', alignment: 'center', style: 'tableCellBoldBlue' },
+                                                state.appMode === 'planning' ? 
+                                                    { text: d.relevant ? `${d.targetPercent.toFixed(1)}%` : '-', alignment: 'center', style: 'tableCellBoldGreen' } : 
+                                                    { text: '', style: 'tableCell' }
+                                            ]),
+                                            [
+                                                { text: 'Overall Average', style: 'tableFooter' },
+                                                { text: `${overallAssessmentCompletion.toFixed(1)}%`, alignment: 'center', style: 'tableFooter' },
+                                                { text: `${overallPercent.toFixed(1)}%`, alignment: 'center', style: 'tableFooterBlue' },
+                                                state.appMode === 'planning' ? 
+                                                    { text: `${overallTargetPercent.toFixed(1)}%`, alignment: 'center', style: 'tableFooterGreen' } : 
+                                                    { text: '', style: 'tableFooter' }
+                                            ]
+                                        ]
+                                    },
+                                    layout: 'lightHorizontalLines',
+                                    margin: [0, 0, 0, 40]
+                                },
+
+                                // Detailed Findings
+                                { text: '2. Assessment Findings', style: 'sectionHeader', pageBreak: 'before' , outline: "true" },
+                                ...domainScores.filter(d => d.relevant).flatMap((domain, dIdx) => {
+                                    const domainInstance = state.assessmentData[domain.id];
+                                    const domainContent = [
+                                        {
+                                            columns: [
+                                                { text: `2.${domain.name.toUpperCase()}`, style: 'domainHeader', tocItem: true, outline: "true", outlineText: `2.${domain.name}`, id: `${domain.name}` },
+                                                {
+                                                    width: 'auto',
+                                                    stack: [
+                                                        { text: 'DOMAIN SCORE', fontSize: 8, color: '#64748b', bold: true, alignment: 'right' },
+                                                        { text: `${domain.percent.toFixed(1)}%`, fontSize: 16, color: '#2563eb', bold: true, alignment: 'right' }
+                                                    ]
+                                                }
+                                            ],
+                                            margin: [0, 20, 0, 10],
+                                            pageBreak: dIdx === 0 ? undefined : 'before'
+                                        },
+                                        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 532, y2: 0, lineWidth: 1.5, lineColor: '#1e293b' }], margin: [0, 0, 0, 20] }
+                                    ];
+
+                                    domainInstance.objectives.forEach((objective, oIdx) => {
+                                        const relevantPractices = objective.practices.filter(p => p.relevant);
+                                        if (relevantPractices.length === 0) return;
+
+                                        domainContent.push({
+                                            text: `2.${dIdx + 1}.${oIdx + 1} ${objective.name}`,
+                                            style: 'objectiveHeader',
+                                            margin: [0, 10, 0, 10],
+                                            tocItem: true,
+                                            outline: "true",
+                                            outlineParent: domainInstance.name
+                                        });
+
+                                        const practiceBlocks = relevantPractices.map((practice, pIdx) => {
+                                            const currentStack = [
+                                                { text: 'CURRENT SCORE', fontSize: 7, color: '#64748b', bold: true, margin: [0, 0, 0, 2], alignment: 'center' },
+                                                { svg: createBubbleWidgetSvg(practice.score, 'current'), width: 120, alignment: 'center' }
+                                            ];
+
+                                            if (practice.evidence) {
+                                                currentStack.push({ 
+                                                    margin: [0, 4, 0, 0],
+                                                    text: [{ text: 'Evidence: ', bold: true, fontSize: 8, color: '#475569' }, { text: practice.evidence, fontSize: 8, color: '#475569', italic: true }],
+                                                    alignment: 'left'
+                                                });
+                                            }
+                                            if (practice.poc) {
+                                                currentStack.push({ 
+                                                    margin: [0, 4, 0, 0],
+                                                    text: [{ text: 'Point of Contact: ', bold: true, fontSize: 8, color: '#475569' }, { text: practice.poc, fontSize: 8, color: '#475569' }],
+                                                    alignment: 'left'
+                                                });
+                                            }
+                                            if (practice.notes) {
+                                                currentStack.push({ 
+                                                    margin: [0, 4, 0, 0],
+                                                    text: [{ text: 'Notes: ', bold: true, fontSize: 8, color: '#475569' }, { text: practice.notes, fontSize: 8, color: '#475569' }],
+                                                    alignment: 'left'
+                                                });
+                                            }
+
+                                            const scoreColumns = [
+                                                {
+                                                    stack: currentStack,
+                                                    width: state.appMode === 'planning' ? '50%' : '100%'
+                                                }
+                                            ];
+                                            
+                                            if (state.appMode === 'planning') {
+                                                const targetStack = [
+                                                    {
+                                                        text: 'TARGET SCORE',
+                                                        fontSize: 7,
+                                                        color: '#64748b',
+                                                        bold: true,
+                                                        margin: [0, 0, 0, 2],
+                                                        alignment: 'center'
+                                                    },
+                                                    {
+                                                        svg: createBubbleWidgetSvg(practice.targetScore, 'target'),
+                                                        width: 120,
+                                                        alignment: 'center'
+                                                    }
+                                                ];
+
+                                                if (practice.targetDate) {
+                                                    targetStack.push({
+                                                        text: [
+                                                            { text: 'Target Date: ', bold: true, fontSize: 8, color: '#475569' },
+                                                            { text: practice.targetDate, fontSize: 8, color: '#475569' }
+                                                        ],
+                                                        margin: [0, 4, 0, 0],
+                                                        alignment: 'left'
+                                                    });
+                                                }
+
+                                                scoreColumns.push({
+                                                    stack: targetStack,
+                                                    width: '50%'
+                                                });
+                                            }
+
+                                            return {
+                                                unbreakable: true,
+                                                stack: [
+                                                    {
+                                                        text: `${practice.id} - ${practice.slug}`,
+                                                        bold: true,
+                                                        fontSize: 12,
+                                                        color: '#1e293b',
+                                                        margin: [0, 15, 0, 4],
+                                                        // tocItem: true
+                                                    },
+                                                    {
+                                                        text: practice.text,
+                                                        fontSize: 10,
+                                                        color: '#334155',
+                                                        margin: [0, 0, 0, 10],
+                                                        lineHeight: 1.2
+                                                    },
+                                                    {
+                                                        columns: scoreColumns,
+                                                        margin: [0, 0, 0, 8]
+                                                    },
+                                                    { canvas: [{ type: 'line', x1: 0, y1: 10, x2: 532, y2: 10, lineWidth: 0.5, lineColor: '#f1f5f9' }] }
+                                                ]
+                                            };
+                                        });
+
+                                        domainContent.push(...practiceBlocks);
+                                    });
+
+                                    return domainContent;
+                                })
+                            ],
+                            styles: {
+                                reportTitle: { fontSize: 24, bold: true, color: '#1e293b' },
+                                reportSubtitle: { fontSize: 14, color: '#475569', margin: [0, 5, 0, 0] },
+                                sectionHeader: { fontSize: 18, bold: true, color: '#1e293b', margin: [0, 0, 0, 15] },
+                                cardTitle: { fontSize: 12, bold: true, color: '#334155', alignment: 'center', margin: [0, 0, 0, 10] },
+                                completionPercent: { fontSize: 24, bold: true, color: '#1e293b', alignment: 'center', margin: [0, 10, 0, 0] },
+                                completionLabel: { fontSize: 9, bold: true, color: '#64748b', alignment: 'center', letterSpacing: 1 },
+                                completionSubtext: { fontSize: 8, color: '#94a3b8', alignment: 'center', margin: [0, 5, 0, 0] },
+                                tableHeader: { fontSize: 10, bold: true, color: '#334155', fillColor: '#f1f5f9', margin: [0, 5, 0, 5] },
+                                tableCell: { fontSize: 10, color: '#334155', margin: [0, 5, 0, 5] },
+                                tableCellDisabled: { fontSize: 10, color: '#94a3b8', margin: [0, 5, 0, 5], italics: true },
+                                tableCellBoldBlue: { fontSize: 10, bold: true, color: '#2563eb', margin: [0, 5, 0, 5] },
+                                tableCellBoldGreen: { fontSize: 10, bold: true, color: '#16a34a', margin: [0, 5, 0, 5] },
+                                tableFooter: { fontSize: 10, bold: true, color: '#1e293b', fillColor: '#f8fafc', margin: [0, 5, 0, 5] },
+                                tableFooterBlue: { fontSize: 10, bold: true, color: '#1d4ed8', fillColor: '#f8fafc', margin: [0, 5, 0, 5] },
+                                tableFooterGreen: { fontSize: 10, bold: true, color: '#15803d', fillColor: '#f8fafc', margin: [0, 5, 0, 5] },
+                                domainHeader: { fontSize: 16, bold: true, color: '#1e293b', letterSpacing: 1 },
+                                objectiveHeader: { fontSize: 14, bold: true, color: '#334155', fillColor: '#f8fafc', margin: [0, 15, 0, 15] },
+                                subTableHeader: { fontSize: 9, bold: true, color: '#475569', margin: [0, 2, 0, 2] }
+                            },
+                            defaultStyle: {
+                                // Defaulting to the standard pdfMake fonts (Roboto) which are properly mapped
+                            }
+                        };
+
+                        const filename = `${assessmentName.replace(/[^a-z0-9]/gi, '_')}_Report.pdf`;
+                        pdfMake.createPdf(docDefinition).download(filename);
+                        console.log('PDF generation successful.');
+
+                    } catch (error) {
+                        console.error('PDF generation failed:', error);
+                        alert('Failed to generate PDF: ' + error.message + '\n\nTry using "Browser Print" instead.');
+                    } finally {
+                        if (originalButton && originalButton.tagName === 'BUTTON') {
+                            originalButton.disabled = false;
+                            originalButton.innerHTML = originalText;
+                        }
+                    }
                 }
             };
 
@@ -1721,6 +2634,9 @@
                         case 'about':
                             view.renderAboutPage();
                             break;
+                        case 'report':
+                            view.renderReportPage();
+                            break;
                     }
                 },
 
@@ -1736,6 +2652,264 @@
 
                 renderAboutPage() {
                     // Static content, nothing to render
+                },
+
+                renderReportPage() {
+                    const {
+                        domainScores,
+                        overallPercent,
+                        overallTargetPercent,
+                        overallAssessmentCompletion,
+                        grandTotalAssessed,
+                        grandTotalPractices
+                    } = utils.calculateAllScores();
+
+                    const assessmentName = dom.assessmentNameInput.value || 'CTI-CMM Assessment';
+                    const today = new Date().toLocaleDateString();
+
+                    const executiveSummaryHtml = `
+                    <div class="report-header mb-8 pb-4 border-b-2 border-slate-200">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h1 class="text-4xl font-bold text-slate-800 mb-2">${assessmentName}</h1>
+                                <p class="text-xl text-slate-600">CTI Maturity Model (CTI-CMM) Full Report</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-slate-500 font-medium">Report Generated</p>
+                                <p class="text-lg font-bold text-slate-700">${today}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-section mb-12">
+                        <h2 class="text-2xl font-bold text-slate-800 mb-6 border-b pb-2">1. Executive Summary</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                            <div class="report-card bg-slate-50 border border-slate-200 rounded-lg p-6">
+                                <h3 class="text-lg font-bold text-slate-700 mb-4 text-center">Maturity Profile</h3>
+                                <div style="height: 500px; width: 500px; margin: 0 auto;">
+                                    <canvas id="reportRadarChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="report-card bg-slate-50 border border-slate-200 rounded-lg p-6 flex flex-col items-center">
+                                <h3 class="text-lg font-bold text-slate-700 mb-4 text-center">Assessment Completion</h3>
+                                <div style="height: 400px; width: 400px;" class="relative">
+                                    <canvas id="reportDoughnutChart"></canvas>
+                                </div>
+                                <div class="mt-4 text-center">
+                                    <p class="text-3xl font-bold text-slate-800">${overallAssessmentCompletion.toFixed(1)}%</p>
+                                    <p class="text-slate-500 uppercase text-xs font-bold tracking-wider">Overall Completion</p>
+                                    <p class="text-sm text-slate-400 mt-1">${grandTotalAssessed} of ${grandTotalPractices} relevant practices assessed</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto mt-8">
+                            <table class="w-full text-left border-collapse report-card">
+                                <thead>
+                                    <tr class="bg-slate-100">
+                                        <th class="p-3 border-b-2 border-slate-200 font-bold text-slate-700">Domain</th>
+                                        <th class="p-3 border-b-2 border-slate-200 font-bold text-slate-700 text-center">Completion</th>
+                                        <th class="p-3 border-b-2 border-slate-200 font-bold text-slate-700 text-center">Current Score %</th>
+                                        ${state.appMode === 'planning' ? '<th class="p-3 border-b-2 border-slate-200 font-bold text-slate-700 text-center">Target Score %</th>' : ''}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${domainScores.map(d => `
+                                        <tr class="${d.relevant ? '' : 'bg-slate-50 opacity-60'}">
+                                            <td class="p-3 border-b border-slate-200">
+                                                <div class="font-bold text-slate-800">${d.name}</div>
+                                                ${!d.relevant ? '<span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Excluded</span>' : ''}
+                                            </td>
+                                            <td class="p-3 border-b border-slate-200 text-center font-medium ${d.assessmentCompletion === 100 ? 'text-green-600' : 'text-slate-600'}">
+                                                ${d.relevant ? `${d.assessmentCompletion.toFixed(0)}%` : '-'}
+                                            </td>
+                                            <td class="p-3 border-b border-slate-200 text-center font-bold text-blue-600">
+                                                ${d.relevant ? `${d.percent.toFixed(1)}%` : '-'}
+                                            </td>
+                                            ${state.appMode === 'planning' ? `
+                                                <td class="p-3 border-b border-slate-200 text-center font-bold text-green-600">
+                                                    ${d.relevant ? `${d.targetPercent.toFixed(1)}%` : '-'}
+                                                </td>` : ''}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                                <tfoot class="bg-slate-50 font-bold">
+                                    <tr>
+                                        <td class="p-3 border-t-2 border-slate-200">Overall Average</td>
+                                        <td class="p-3 border-t-2 border-slate-200 text-center">${overallAssessmentCompletion.toFixed(1)}%</td>
+                                        <td class="p-3 border-t-2 border-slate-200 text-center text-blue-700">${overallPercent.toFixed(1)}%</td>
+                                        ${state.appMode === 'planning' ? `<td class="p-3 border-t-2 border-slate-200 text-center text-green-700">${overallTargetPercent.toFixed(1)}%</td>` : ''}
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    `;
+
+                    let html = `
+                    <div id="report-executive-summary" class="report-chunk">
+                        ${executiveSummaryHtml}
+                    </div>
+
+                    <div id="report-detailed-findings" class="report-section mb-12">
+                        <h2 class="text-2xl font-bold text-slate-800 mb-6 border-b pb-2">2. Detailed Assessment Findings</h2>
+                        ${domainScores.filter(d => d.relevant).map((domain, dIdx) => {
+                            const domainInstance = state.assessmentData[domain.id];
+                            return `
+                                <div class="domain-report-page report-chunk mt-12 mb-16" data-domain-id="${domain.id}">
+                                    <div class="flex justify-between items-end border-b-2 border-slate-800 pb-2 mb-6">
+                                        <h3 class="text-2xl font-extrabold text-slate-800 uppercase tracking-tight">2.${dIdx + 1} ${domain.name}</h3>
+                                        <div class="text-right">
+                                            <span class="text-sm font-bold text-slate-500 uppercase mr-2">Domain Score:</span>
+                                            <span class="text-xl font-black text-blue-600">${domain.percent.toFixed(1)}%</span>
+                                        </div>
+                                    </div>
+
+                                    ${domainInstance.objectives.map((objective, oIdx) => {
+                                        const relevantPractices = objective.practices.filter(p => p.relevant);
+                                        if (relevantPractices.length === 0) return '';
+                                        
+                                        return `
+                                            <div class="mb-12">
+                                                <h4 class="text-xl font-bold text-slate-800 mb-6 bg-slate-50 p-4 rounded-md border-l-4 border-slate-600 tracking-tight uppercase">2.${dIdx + 1}.${oIdx + 1} ${objective.name}</h4>
+                                                <div class="space-y-8">
+                                                    ${relevantPractices.map((practice, pIdx) => `
+                                                        <div class="practice-report-entry pb-6 border-b border-slate-100 last:border-0">
+                                                            <div class="mb-4">
+                                                                <h5 class="text-lg font-black text-slate-800 uppercase tracking-tight mb-2">2.${dIdx + 1}.${oIdx + 1}.${pIdx + 1} ${practice.slug}</h5>
+                                                                <p class="text-slate-700 text-base leading-relaxed">${practice.text}</p>
+                                                            </div>
+                                                            
+                                                            <div class="flex flex-wrap gap-x-12 gap-y-4 mb-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                                                                <div class="flex flex-col">
+                                                                    <span class="text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Current Score</span>
+                                                                    ${view.createDisplayMaturityWidget(practice.score, 'current')}
+                                                                </div>
+                                                                ${state.appMode === 'planning' ? `
+                                                                    <div class="flex flex-col">
+                                                                        <span class="text-xs font-bold text-slate-500 uppercase mb-2 tracking-wider">Target Score</span>
+                                                                        ${view.createDisplayMaturityWidget(practice.targetScore, 'target')}
+                                                                    </div>` : ''}
+                                                            </div>
+                                                            
+                                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm bg-white">
+                                                                ${practice.evidence ? `
+                                                                    <div class="p-3 border border-slate-100 rounded bg-white shadow-sm">
+                                                                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Evidence</div>
+                                                                        <div class="text-slate-700 italic leading-relaxed">${practice.evidence}</div>
+                                                                    </div>` : ''}
+                                                                ${practice.poc ? `
+                                                                    <div class="p-3 border border-slate-100 rounded bg-white shadow-sm">
+                                                                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Point of Contact</div>
+                                                                        <div class="text-slate-700 font-medium">${practice.poc}</div>
+                                                                    </div>` : ''}
+                                                                ${practice.notes ? `
+                                                                    <div class="md:col-span-2 p-3 border border-slate-100 rounded bg-white shadow-sm">
+                                                                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Notes</div>
+                                                                        <div class="text-slate-700 leading-relaxed">${practice.notes}</div>
+                                                                    </div>` : ''}
+                                                            </div>
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    `;
+
+                    dom.reportContent.innerHTML = html;
+
+                    // --- RENDER CHARTS FOR REPORT ---
+                    const radarCtx = document.getElementById('reportRadarChart').getContext('2d');
+                    const doughnutCtx = document.getElementById('reportDoughnutChart').getContext('2d');
+
+                    const radarDatasets = [
+                        {
+                            label: 'Current Maturity %',
+                            data: domainScores.map(d => d.relevant ? d.percent : 0),
+                            backgroundColor: withAlpha(BRAND_COLORS.blue, 0.2),
+                            borderColor: BRAND_COLORS.blue,
+                            borderWidth: 2,
+                        }
+                    ];
+
+                    if (state.appMode === 'planning') {
+                        radarDatasets.push({
+                            label: 'Target Maturity %',
+                            data: domainScores.map(d => d.relevant ? d.targetPercent : 0),
+                            backgroundColor: withAlpha(BRAND_COLORS.green, 0.2),
+                            borderColor: BRAND_COLORS.green,
+                            borderWidth: 2,
+                        });
+                    }
+
+                    // Store chart instances for later cleanup or access
+                    if (!state.chartInstances) state.chartInstances = {};
+                    
+                    if (state.chartInstances.reportRadar) {
+                        state.chartInstances.reportRadar.destroy();
+                        delete state.chartInstances.reportRadar;
+                    }
+                    if (state.chartInstances.reportDoughnut) {
+                        state.chartInstances.reportDoughnut.destroy();
+                        delete state.chartInstances.reportDoughnut;
+                    }
+
+                    state.chartInstances.reportRadar = new Chart(radarCtx, {
+                        type: 'radar',
+                        data: {
+                            labels: domainScores.map(d => d.nickname),
+                            datasets: radarDatasets
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: false,
+                            // Ensure chart is not considered "animating" even if it's new
+                            transitions: {
+                                active: {
+                                    animation: {
+                                        duration: 0
+                                    }
+                                }
+                            },
+                            scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } }
+                        }
+                    });
+
+                    state.chartInstances.reportDoughnut = new Chart(doughnutCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Assessed', 'Not Assessed'],
+                            datasets: [{
+                                data: [grandTotalAssessed, grandTotalPractices - grandTotalAssessed],
+                                backgroundColor: [BRAND_COLORS.blue, BRAND_COLORS.muted],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: false,
+                            // Ensure chart is not considered "animating" even if it's new
+                            transitions: {
+                                active: {
+                                    animation: {
+                                        duration: 0
+                                    }
+                                }
+                            },
+                            cutout: '70%',
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { enabled: false }
+                            }
+                        }
+                    });
                 },
 
                 /**
@@ -3352,7 +4526,7 @@
                 window.CMM_DATA.domains.forEach(domain => {
                     const domainInstance = state.assessmentData[domain.id];
                     const li = document.createElement('li');
-                    li.className = "group relative px-3 py-1";
+                    li.className = "group relative px-3 py-1 no-print";
                     li.innerHTML = `
                     <div class="flex items-center">
                         <label class="relative flex-shrink-0 mr-2 z-20 cursor-pointer">
@@ -3422,9 +4596,10 @@
             }
 
             // --- 9. Public API ---
-            // Expose only the init function to the outside world
+            // Expose only the init function and necessary utilities to the outside world
             return {
-                init: init
+                init: init,
+                utils: utils
             };
 
         })();
